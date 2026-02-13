@@ -1,407 +1,517 @@
-# API Specification - TrendMart BI Dashboard
+# PayFlow - API Specification
 
-> **Note:** Currently, the TrendMart BI Dashboard is a Streamlit application with direct function calls. This API specification defines future RESTful API endpoints for external integrations and microservices architecture.
+> **⚠️ Core Requirements**: API endpoints support [KEY_REQUIREMENTS.md](./KEY_REQUIREMENTS.md).
 
-All endpoints are prefixed with `/api/v1`.
-Authentication: Bearer Token (JWT) or API Key.
+## Table of Contents
+1. [Overview](#overview)
+2. [Authentication](#authentication)
+3. [Error Handling](#error-handling)
+4. [Endpoints](#endpoints)
 
-## 1. Authentication
+---
 
-### Login
-`POST /auth/login`
-Authenticate user and receive JWT token.
+## Overview
 
-**Body:**
+- **Base URL**: `https://api.payflow.com/api/v1`
+- **Protocol**: HTTPS (TLS 1.3)
+- **Format**: JSON (application/json)
+- **Auth**: Bearer JWT (OAuth 2.0 + PKCE for mobile)
+- **Rate Limiting**: 100 req/min (customer), 500 req/min (merchant), 2000 req/min (admin)
+- **Versioning**: URL path versioning (`/v1/`, `/v2/`)
+
+---
+
+## Authentication
+
+### Register
+```
+POST /auth/register
+```
+**Request**:
 ```json
 {
-  "username": "cco@trendmart.com",
-  "password": "cco123"
+  "fullName": "Ahmed Al-Rashid",
+  "phone": "+966501234567"
+}
+```
+**Response** (200):
+```json
+{
+  "message": "OTP sent",
+  "otpExpiresIn": 300
 }
 ```
 
-**Response:**
+### Verify OTP
+```
+POST /auth/verify-otp
+```
+**Request**:
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": "user_001",
-    "username": "cco@trendmart.com",
-    "role": "CCO",
-    "name": "Chief Commercial Officer"
+  "phone": "+966501234567",
+  "otp": "482916",
+  "pin": "1234"
+}
+```
+**Response** (201):
+```json
+{
+  "userId": "uuid",
+  "accessToken": "eyJ...",
+  "refreshToken": "eyJ...",
+  "expiresIn": 900
+}
+```
+
+### Refresh Token
+```
+POST /auth/refresh
+```
+**Request**:
+```json
+{ "refreshToken": "eyJ..." }
+```
+**Response** (200):
+```json
+{
+  "accessToken": "eyJ...",
+  "expiresIn": 900
+}
+```
+
+---
+
+## Error Handling
+
+All errors follow a standard format:
+
+```json
+{
+  "error": {
+    "code": "PAYMENT_INSUFFICIENT_FUNDS",
+    "message": "Insufficient funds in the selected bank account",
+    "details": {
+      "requiredAmount": 100.00,
+      "availableBalance": 45.50
+    },
+    "traceId": "abc-123-def"
   }
 }
 ```
 
-### Logout
-`POST /auth/logout`
-Invalidate current session token.
+### Standard Error Codes
+| HTTP | Code | Description |
+|------|------|-------------|
+| 400 | VALIDATION_ERROR | Invalid request parameters |
+| 401 | UNAUTHORIZED | Missing or invalid authentication |
+| 403 | FORBIDDEN | Insufficient permissions / Transaction blocked |
+| 404 | NOT_FOUND | Resource not found |
+| 409 | CONFLICT | Duplicate resource (phone, IBAN, idempotency key) |
+| 410 | GONE | Resource expired (QR code, OTP) |
+| 422 | UNPROCESSABLE | Business logic failure (KYC, insufficient funds) |
+| 429 | RATE_LIMITED | Too many requests |
+| 500 | INTERNAL_ERROR | Server error |
 
-**Headers:**
-- `Authorization: Bearer <token>`
+---
 
-**Response:**
+## Endpoints
+
+### User Management
+
+#### Link Bank Account
+```
+POST /users/me/bank-accounts
+Authorization: Bearer {token}
+```
+**Request**:
 ```json
 {
-  "message": "Logged out successfully"
+  "iban": "SA0380000000608010167519",
+  "bankName": "Al Rajhi Bank",
+  "accountHolderName": "Ahmed Al-Rashid"
+}
+```
+**Response** (201):
+```json
+{
+  "id": "uuid",
+  "bankName": "Al Rajhi Bank",
+  "ibanMasked": "SA03****7519",
+  "status": "pending_verification",
+  "isPrimary": true
 }
 ```
 
-## 2. Data Access
+#### Get User Profile
+```
+GET /users/me
+Authorization: Bearer {token}
+```
+**Response** (200):
+```json
+{
+  "id": "uuid",
+  "fullName": "Ahmed Al-Rashid",
+  "phoneMasked": "+966*****567",
+  "kycStatus": "verified",
+  "bankAccounts": [
+    {
+      "id": "uuid",
+      "bankName": "Al Rajhi Bank",
+      "ibanMasked": "SA03****7519",
+      "status": "active",
+      "isPrimary": true
+    }
+  ],
+  "loyaltyTier": "silver",
+  "loyaltyPoints": 250
+}
+```
 
-### Get Unified Data
-`GET /data/unified`
-Retrieve unified data model with optional filtering.
+#### Complete KYC
+```
+POST /users/me/kyc
+Authorization: Bearer {token}
+Content-Type: multipart/form-data
+```
+**Fields**: `idFront` (file), `idBack` (file), `selfie` (file)
 
-**Query Parameters:**
-- `region` (String): Filter by region (North/South/East/West)
-- `start_date` (Date): Filter by start date (YYYY-MM-DD)
-- `end_date` (Date): Filter by end date (YYYY-MM-DD)
-- `store_name` (String): Filter by store name
-- `category` (String): Filter by product category
-- `limit` (Integer): Limit number of records (default: 1000)
-- `offset` (Integer): Pagination offset (default: 0)
+**Response** (202):
+```json
+{
+  "status": "in_review",
+  "estimatedCompletionHours": 24
+}
+```
 
-**Headers:**
-- `Authorization: Bearer <token>`
+---
 
-**Response:**
+### Merchant Management
+
+#### Onboard Merchant (Admin only)
+```
+POST /merchants
+Authorization: Bearer {admin_token}
+```
+**Request**:
+```json
+{
+  "businessName": "Café Arabica",
+  "registrationNumber": "CR-1234567890",
+  "category": "food_beverage",
+  "contactPhone": "+966509876543",
+  "settlementIBAN": "SA0380000000608010167519",
+  "address": "King Fahd Road, Riyadh"
+}
+```
+**Response** (201):
+```json
+{
+  "id": "uuid",
+  "businessName": "Café Arabica",
+  "status": "active",
+  "staticQRUrl": "https://cdn.payflow.com/qr/merchant-uuid.png",
+  "dashboardUrl": "https://merchant.payflow.com/login"
+}
+```
+
+#### Rate Merchant
+```
+POST /merchants/{merchantId}/ratings
+Authorization: Bearer {token}
+```
+**Request**:
+```json
+{
+  "stars": 5,
+  "review": "Excellent service and quick payment processing"
+}
+```
+**Response** (201):
+```json
+{
+  "id": "uuid",
+  "stars": 5,
+  "merchantRatingAverage": 4.7,
+  "totalRatings": 128
+}
+```
+
+---
+
+### Payment Operations
+
+#### Send Payment (P2P / P2M)
+```
+POST /payments
+Authorization: Bearer {token}
+Idempotency-Key: {client-uuid}
+```
+**Request**:
+```json
+{
+  "recipientPhone": "+966507654321",
+  "amount": 150.00,
+  "currency": "SAR",
+  "sourceBankAccountId": "uuid",
+  "description": "Lunch split",
+  "pin": "1234",
+  "loyaltyPointsToUse": 0
+}
+```
+**Response** (200):
+```json
+{
+  "paymentId": "uuid",
+  "status": "completed",
+  "amount": 150.00,
+  "fee": 0.00,
+  "referenceNumber": "PF-2026021300001",
+  "recipientName": "Sara Ahmed",
+  "completedAt": "2026-02-13T10:30:00Z",
+  "loyaltyPointsEarned": 15
+}
+```
+
+#### Get Payment Status
+```
+GET /payments/{paymentId}
+Authorization: Bearer {token}
+```
+**Response** (200):
+```json
+{
+  "id": "uuid",
+  "status": "completed",
+  "type": "p2p",
+  "amount": 150.00,
+  "fee": 0.00,
+  "sender": { "name": "Ahmed", "phoneMasked": "+966*****567" },
+  "recipient": { "name": "Sara", "phoneMasked": "+966*****321" },
+  "referenceNumber": "PF-2026021300001",
+  "initiatedAt": "2026-02-13T10:29:58Z",
+  "completedAt": "2026-02-13T10:30:00Z"
+}
+```
+
+---
+
+### QR Code Management
+
+#### Decode QR Code
+```
+POST /qr/decode
+Authorization: Bearer {token}
+```
+**Request**:
+```json
+{
+  "payload": "payflow://pay/merchant-uuid?amount=75.50&ref=inv-001"
+}
+```
+**Response** (200):
+```json
+{
+  "recipientId": "merchant-uuid",
+  "recipientType": "merchant",
+  "recipientName": "Café Arabica",
+  "amount": 75.50,
+  "reference": "inv-001",
+  "qrType": "dynamic",
+  "expiresAt": "2026-02-13T11:00:00Z"
+}
+```
+
+#### Generate Dynamic QR
+```
+POST /qr/generate
+Authorization: Bearer {token}
+```
+**Request**:
+```json
+{
+  "amount": 50.00,
+  "expiresInMinutes": 15
+}
+```
+**Response** (201):
+```json
+{
+  "qrId": "uuid",
+  "payload": "payflow://pay/user-uuid?amount=50.00&exp=1707826200",
+  "imageUrl": "https://cdn.payflow.com/qr/dynamic/uuid.png",
+  "expiresAt": "2026-02-13T11:45:00Z"
+}
+```
+
+#### Download QR Image
+```
+GET /qr/{qrId}/download?format=png
+Authorization: Bearer {token}
+```
+**Response**: Binary image file (PNG/SVG)
+
+---
+
+### Transaction History
+
+#### List Transactions
+```
+GET /transactions?page=1&limit=20&from=2025-01-01&to=2026-02-13&direction=debit
+Authorization: Bearer {token}
+```
+**Response** (200):
 ```json
 {
   "data": [
     {
-      "date": "2023-12-02",
-      "store_name": "Store_North_1",
-      "region": "North",
-      "product_id": "P001",
-      "product_name": "Everyday Atta 5kg",
-      "category": "Grocery",
-      "quantity": 220,
-      "net_sales": 53499.60,
-      "budget_utilization_pct": 63.33,
-      "stock_level": 150
+      "id": "uuid",
+      "type": "payment",
+      "direction": "debit",
+      "amount": 150.00,
+      "counterpartyName": "Sara Ahmed",
+      "referenceNumber": "PF-2026021300001",
+      "createdAt": "2026-02-13T10:30:00Z"
     }
   ],
-  "total_records": 2500,
-  "limit": 1000,
-  "offset": 0
-}
-```
-
-### Get Summary Statistics
-`GET /data/summary`
-Get aggregated summary statistics.
-
-**Headers:**
-- `Authorization: Bearer <token>`
-
-**Response:**
-```json
-{
-  "total_records": 2500,
-  "date_range": {
-    "start": "2023-01-01",
-    "end": "2023-12-31"
-  },
-  "total_revenue": 1250000.00,
-  "total_quantity": 50000,
-  "unique_stores": 8,
-  "unique_products": 50,
-  "regions": ["North", "South", "East", "West"]
-}
-```
-
-## 3. Analytics Endpoints
-
-### Trend Analysis
-`POST /analytics/trends`
-Analyze trends in sales data.
-
-**Body:**
-```json
-{
-  "metric": "net_sales",
-  "method": "linear",
-  "period": "daily",
-  "start_date": "2023-01-01",
-  "end_date": "2023-12-31",
-  "group_by": "region"
-}
-```
-
-**Response:**
-```json
-{
-  "trend": {
-    "trend_direction": "increasing",
-    "slope": 125.5,
-    "r_squared": 0.85,
-    "is_significant": true,
-    "percentage_change": 15.2,
-    "start_value": 10000.00,
-    "end_value": 11520.00
-  },
-  "seasonality": {
-    "has_seasonality": true,
-    "strength": "moderate",
-    "month": {
-      "1": 9500.00,
-      "2": 9800.00,
-      "12": 12000.00
-    }
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 342,
+    "totalPages": 18
   }
 }
 ```
 
-### Anomaly Detection
-`POST /analytics/anomalies`
-Detect anomalies in sales data.
-
-**Body:**
+#### Email Receipt
+```
+POST /transactions/{txId}/receipt
+Authorization: Bearer {token}
+```
+**Request**:
 ```json
 {
-  "metric": "net_sales",
-  "method": "iqr",
-  "include_multivariate": true
+  "email": "ahmed@example.com"
+}
+```
+**Response** (202):
+```json
+{
+  "message": "Receipt will be sent to ahmed@example.com"
 }
 ```
 
-**Response:**
+---
+
+### Loyalty & Cashback
+
+#### Get Loyalty Status
+```
+GET /loyalty/me
+Authorization: Bearer {token}
+```
+**Response** (200):
 ```json
 {
-  "statistical_outliers": {
-    "count": 45,
-    "high_outliers": 25,
-    "low_outliers": 20,
-    "examples": [
-      {
-        "date": "2023-06-15",
-        "value": 25000.00,
-        "index": 150
-      }
-    ]
-  },
-  "time_series_anomalies": {
-    "count": 30,
-    "spikes": 18,
-    "drops": 12
-  },
-  "overall_assessment": {
-    "total_anomalies": 75,
-    "anomaly_rate": 3.0,
-    "data_quality": "good"
-  }
+  "tier": "gold",
+  "availablePoints": 2350,
+  "lifetimePoints": 8200,
+  "nextTier": "platinum",
+  "pointsToNextTier": 2650,
+  "pointsValue": "$23.50"
 }
 ```
 
-### Scenario Simulation
-`POST /analytics/scenarios`
-Simulate business scenarios.
-
-**Body (Promotion):**
-```json
-{
-  "scenario_type": "promotion",
-  "discount_pct": 20.0,
-  "duration_days": 7,
-  "price_elasticity": -1.5
-}
+#### List Cashback Campaigns (Admin)
 ```
-
-**Body (Price Change):**
-```json
-{
-  "scenario_type": "price_change",
-  "price_change_pct": 10.0,
-  "price_elasticity": -1.5
-}
+GET /admin/cashback-campaigns?status=active
+Authorization: Bearer {admin_token}
 ```
-
-**Response:**
+**Response** (200):
 ```json
 {
-  "scenario": "promotion",
-  "baseline": {
-    "revenue": 1000000.00,
-    "units_sold": 50000,
-    "average_price": 20.00
-  },
-  "simulated": {
-    "revenue": 1176000.00,
-    "units": 98000,
-    "avg_price": 16.00
-  },
-  "impact": {
-    "revenue_change_pct": 17.6,
-    "units_change_pct": 96.0,
-    "incremental_revenue": 176000.00,
-    "incremental_units": 48000
-  },
-  "recommendation": "proceed"
-}
-```
-
-## 4. AI Chat Endpoint
-
-### Natural Language Query
-`POST /ai/chat`
-Process natural language query and return analysis.
-
-**Body:**
-```json
-{
-  "query": "What are the sales trends over time?",
-  "conversation_id": "conv_123"
-}
-```
-
-**Response:**
-```json
-{
-  "response": "**Trend Analysis:**\n\nThe sales trend is **increasing** with a 15.2% change over the period...",
-  "query_type": "trend",
-  "results": {
-    "type": "trend",
-    "trend": {
-      "trend_direction": "increasing",
-      "percentage_change": 15.2
-    }
-  },
-  "visualization_data": {
-    "type": "trend",
-    "data": {...}
-  }
-}
-```
-
-## 5. Dashboard Data Endpoints
-
-### Get CCO Dashboard Data
-`GET /dashboards/cco`
-Get data for CCO dashboard.
-
-**Headers:**
-- `Authorization: Bearer <token>`
-- Requires role: CCO
-
-**Response:**
-```json
-{
-  "global_revenue": 1250000.00,
-  "revenue_by_region": {
-    "North": 350000.00,
-    "South": 400000.00,
-    "East": 300000.00,
-    "West": 200000.00
-  },
-  "category_share": {
-    "Grocery": 40.0,
-    "Electronics": 25.0,
-    "Home Care": 20.0,
-    "Personal Care": 15.0
-  },
-  "insights": "Revenue has increased 15% YoY..."
-}
-```
-
-### Get Finance Dashboard Data
-`GET /dashboards/finance`
-Get data for Finance dashboard.
-
-**Headers:**
-- `Authorization: Bearer <token>`
-- Requires role: Finance
-
-**Response:**
-```json
-{
-  "budget_utilization": [
+  "data": [
     {
-      "store_name": "Store_North_1",
-      "region": "North",
-      "annual_budget": 150000.00,
-      "spend_ytd": 95000.00,
-      "utilization_pct": 63.33
+      "id": "uuid",
+      "name": "Visa Summer Cashback",
+      "cardNetwork": "visa",
+      "cashbackValue": 5.0,
+      "cashbackType": "percentage",
+      "totalBudget": 100000.00,
+      "spentBudget": 34500.00,
+      "status": "active",
+      "startDate": "2026-06-01",
+      "endDate": "2026-08-31"
     }
-  ],
-  "roi_analysis": [
+  ]
+}
+```
+
+---
+
+### Fraud Management (Admin)
+
+#### Get Fraud Alert Queue
+```
+GET /admin/fraud-alerts?status=pending_review
+Authorization: Bearer {admin_token}
+```
+**Response** (200):
+```json
+{
+  "data": [
     {
-      "store_name": "Store_North_1",
-      "spend_ytd": 95000.00,
-      "revenue": 350000.00,
-      "roi": 268.42
+      "id": "uuid",
+      "paymentId": "uuid",
+      "riskScore": 78,
+      "riskFactors": ["velocity_exceeded", "new_device"],
+      "status": "pending_review",
+      "flaggedAt": "2026-02-13T09:15:00Z"
     }
-  ],
-  "insights": "Budget utilization is optimal..."
+  ]
 }
 ```
 
-### Get Manager Dashboard Data
-`GET /dashboards/manager`
-Get data for Manager dashboard (region-specific).
-
-**Headers:**
-- `Authorization: Bearer <token>`
-- Requires role: Manager
-
-**Query Parameters:**
-- `region` (String): Manager's assigned region
-
-**Response:**
+#### Review Fraud Alert
+```
+PUT /admin/fraud-alerts/{alertId}
+Authorization: Bearer {admin_token}
+```
+**Request**:
 ```json
 {
-  "region": "North",
-  "daily_sales": [
-    {
-      "date": "2023-12-01",
-      "net_sales": 12000.00,
-      "quantity": 500
-    },
-    {
-      "date": "2023-12-02",
-      "net_sales": 13500.00,
-      "quantity": 550
-    }
-  ],
-  "insights": "Regional sales show strong growth..."
+  "decision": "approved",
+  "notes": "Verified with customer via phone"
 }
 ```
 
-## 6. Error Responses
+---
 
-All endpoints return standard error format:
+### Notifications
 
-**400 Bad Request:**
+#### Get Notification Preferences
+```
+GET /notifications/preferences
+Authorization: Bearer {token}
+```
+
+#### Update Notification Preferences
+```
+PUT /notifications/preferences
+Authorization: Bearer {token}
+```
+**Request**:
 ```json
 {
-  "error": "Invalid request parameters",
-  "message": "Missing required parameter: metric",
-  "code": "BAD_REQUEST"
+  "transactions": { "push": true, "sms": true, "email": false },
+  "promotions": { "push": true, "sms": false, "email": true },
+  "security": { "push": true, "sms": true, "email": true }
 }
 ```
 
-**401 Unauthorized:**
-```json
-{
-  "error": "Authentication required",
-  "message": "Invalid or expired token",
-  "code": "UNAUTHORIZED"
-}
-```
+---
 
-**403 Forbidden:**
-```json
-{
-  "error": "Access denied",
-  "message": "Insufficient permissions for this resource",
-  "code": "FORBIDDEN"
-}
-```
-
-**500 Internal Server Error:**
-```json
-{
-  "error": "Internal server error",
-  "message": "An unexpected error occurred",
-  "code": "INTERNAL_ERROR"
-}
-```
+**Last Updated**: February 2026
+**Version**: 1.0
+**Status**: Design Complete

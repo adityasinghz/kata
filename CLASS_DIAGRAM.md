@@ -1,196 +1,593 @@
-# Class Diagram - TrendMart BI Dashboard
+# PayFlow - Class Diagram
 
-> **⚠️ Core Requirements**: Classes are designed around the core requirements defined in [KEY_REQUIREMENTS.md](./KEY_REQUIREMENTS.md).
+> **⚠️ Core Requirements**: Domain model supports the core requirements defined in [KEY_REQUIREMENTS.md](./KEY_REQUIREMENTS.md).
 
 ## Table of Contents
 1. [Overview](#overview)
-2. [Data Layer Classes](#data-layer-classes)
-3. [Business Logic Layer Classes](#business-logic-layer-classes)
-4. [Presentation Layer Classes](#presentation-layer-classes)
-5. [Analytics Tools Classes](#analytics-tools-classes)
-6. [Complete Class Diagram](#complete-class-diagram)
+2. [Domain Layer](#domain-layer)
+3. [Service Layer](#service-layer)
+4. [Infrastructure Layer](#infrastructure-layer)
+5. [Relationship Details](#relationship-details)
 
 ---
 
 ## Overview
 
-The TrendMart BI Dashboard follows a **Modular Python Architecture**:
-
-- **Data Layer**: Data loading and ETL operations (DataLoader)
-- **Business Logic Layer**: Authentication, AI integration, query processing
-- **Presentation Layer**: Streamlit UI components
-- **Analytics Tools**: Modular analysis tools
+The class diagram is organized into three layers following **Clean Architecture**:
+1. **Domain Layer** — Pure business entities and value objects
+2. **Service Layer** — Application and domain services
+3. **Infrastructure Layer** — External integrations and persistence
 
 ---
 
-## Data Layer Classes
+## Domain Layer
+
+### Core Entities
 
 ```mermaid
 classDiagram
-    class DataLoader {
-        -str data_dir
-        -DataFrame product_master
-        -DataFrame store_sales
-        -DataFrame store_budget
-        -DataFrame store_inventory
-        -DataFrame unified_data
-        +load_all_data() Dict[str, DataFrame]
-        +create_unified_model() DataFrame
-        +get_unified_data() DataFrame
-        +filter_by_region(region) DataFrame
-        +get_summary_stats() Dict
-        -_calculate_derived_metrics(df) DataFrame
+
+    class User {
+        -UUID id
+        -String fullName
+        -PhoneNumber phone
+        -String passwordHash
+        -KYCStatus kycStatus
+        -UserStatus status
+        -DateTime createdAt
+        -DateTime updatedAt
+        +register(name, phone, pin)
+        +linkBankAccount(iban)
+        +unlinkBankAccount(accountId)
+        +completeKYC(documents)
+        +getTransactionLimit() Money
+        +isActive() bool
+    }
+
+    class BankAccount {
+        -UUID id
+        -UUID userId
+        -IBAN iban
+        -String bankName
+        -String accountHolderName
+        -BankAccountStatus status
+        -bool isPrimary
+        -DateTime verifiedAt
+        +validate() bool
+        +activate()
+        +deactivate()
+        +setPrimary()
+    }
+
+    class Merchant {
+        -UUID id
+        -String businessName
+        -String registrationNumber
+        -MerchantCategory category
+        -MerchantStatus status
+        -UUID contactPersonId
+        -IBAN settlementIBAN
+        -String staticQRCodeUrl
+        -Decimal ratingAverage
+        -Integer ratingCount
+        -DateTime onboardedAt
+        +approve()
+        +suspend(reason)
+        +reactivate()
+        +generateStaticQR() QRCode
+        +getSettlementReport(dateRange) Report
+        +updateRating(newRating)
+    }
+
+    class Payment {
+        -UUID id
+        -UUID senderId
+        -UUID recipientId
+        -PaymentType type
+        -Money amount
+        -Money fee
+        -PaymentStatus status
+        -PaymentMethod method
+        -String idempotencyKey
+        -UUID bankTransactionRef
+        -String description
+        -Integer fraudRiskScore
+        -DateTime initiatedAt
+        -DateTime completedAt
+        +initiate()
+        +authorize()
+        +complete()
+        +fail(reason)
+        +reverse()
+        +getFinalAmount() Money
+    }
+
+    class Transaction {
+        -UUID id
+        -UUID paymentId
+        -UUID userId
+        -TransactionType type
+        -Money amount
+        -Money balanceAfter
+        -String referenceNumber
+        -TransactionDirection direction
+        -String counterpartyName
+        -DateTime createdAt
+        +generateReceipt() Receipt
+        +toSummary() TransactionSummary
+    }
+
+    class QRCode {
+        -UUID id
+        -UUID ownerId
+        -QRType type
+        -String payload
+        -Money amount
+        -DateTime expiresAt
+        -String imageUrl
+        +isExpired() bool
+        +decode() QRPayload
+        +toImage(format) ByteArray
+        +refresh()
+    }
+
+    class LoyaltyAccount {
+        -UUID id
+        -UUID userId
+        -LoyaltyTier tier
+        -Integer totalPoints
+        -Integer availablePoints
+        -Integer lifetimePoints
+        -DateTime tierEvaluatedAt
+        +creditPoints(amount, reason)
+        +debitPoints(amount)
+        +evaluateTier()
+        +getPointsValue() Money
+        +getNextTierThreshold() Integer
+    }
+
+    class CashbackCampaign {
+        -UUID id
+        -String name
+        -CardNetwork cardNetwork
+        -CashbackType cashbackType
+        -Decimal cashbackValue
+        -Money minTransactionAmount
+        -Money totalBudget
+        -Money spentBudget
+        -CampaignStatus status
+        -DateTime startDate
+        -DateTime endDate
+        +isActive() bool
+        +isBudgetAvailable(amount) bool
+        +calculateCashback(txAmount) Money
+        +deductBudget(amount)
+        +pause()
+        +resume()
+    }
+
+    class MerchantRating {
+        -UUID id
+        -UUID merchantId
+        -UUID customerId
+        -Integer stars
+        -String review
+        -DateTime createdAt
+        +validate() bool
+    }
+
+    class FraudAlert {
+        -UUID id
+        -UUID paymentId
+        -UUID userId
+        -Integer riskScore
+        -FraudAlertStatus status
+        -String[] riskFactors
+        -String deviceFingerprint
+        -GeoLocation location
+        -DateTime flaggedAt
+        -UUID reviewedBy
+        -DateTime reviewedAt
+        -String reviewNotes
+        +approve()
+        +block()
+        +escalate()
+    }
+
+    User "1" --> "*" BankAccount : has
+    User "1" --> "*" Payment : sends
+    User "1" --> "1" LoyaltyAccount : has
+    Merchant "1" --> "*" Payment : receives
+    Merchant "1" --> "*" MerchantRating : rated_by
+    Payment "1" --> "2" Transaction : generates
+    Payment "1" --> "0..1" FraudAlert : may_flag
+    QRCode "*" --> "1" User : owned_by
+    QRCode "*" --> "1" Merchant : owned_by
+```
+
+### Value Objects
+
+```mermaid
+classDiagram
+
+    class Money {
+        -Decimal amount
+        -Currency currency
+        +add(Money) Money
+        +subtract(Money) Money
+        +isPositive() bool
+        +isZero() bool
+        +format() String
+    }
+
+    class IBAN {
+        -String value
+        -String countryCode
+        -String bankCode
+        -String accountNumber
+        +validate() bool
+        +mask() String
+        +getBankCode() String
+    }
+
+    class PhoneNumber {
+        -String countryCode
+        -String number
+        +validate() bool
+        +format() String
+        +mask() String
+    }
+
+    class GeoLocation {
+        -Decimal latitude
+        -Decimal longitude
+        -String country
+        -String city
+        +distanceTo(GeoLocation) Decimal
+    }
+
+    class QRPayload {
+        -UUID recipientId
+        -RecipientType recipientType
+        -Money amount
+        -String reference
+        -DateTime expiry
+        +encode() String
+        +isValid() bool
+    }
+```
+
+### Enumerations
+
+```mermaid
+classDiagram
+
+    class KYCStatus {
+        <<enumeration>>
+        PENDING
+        IN_REVIEW
+        VERIFIED
+        REJECTED
+        EXPIRED
+    }
+
+    class PaymentStatus {
+        <<enumeration>>
+        INITIATED
+        FRAUD_CHECK
+        AUTHORIZED
+        PROCESSING
+        COMPLETED
+        FAILED
+        REVERSED
+        EXPIRED
+    }
+
+    class PaymentType {
+        <<enumeration>>
+        P2P
+        P2M
+        QR_PAYMENT
+        POS_PAYMENT
+    }
+
+    class LoyaltyTier {
+        <<enumeration>>
+        SILVER
+        GOLD
+        PLATINUM
+    }
+
+    class MerchantStatus {
+        <<enumeration>>
+        PENDING_APPROVAL
+        ACTIVE
+        SUSPENDED
+        DEACTIVATED
+    }
+
+    class FraudAlertStatus {
+        <<enumeration>>
+        PENDING_REVIEW
+        APPROVED
+        BLOCKED
+        ESCALATED
+    }
+
+    class CardNetwork {
+        <<enumeration>>
+        VISA
+        MASTERCARD
+        AMEX
+        LOCAL_DEBIT
     }
 ```
 
 ---
 
-## Business Logic Layer Classes
+## Service Layer
 
-### Authentication & Authorization
-
-```mermaid
-classDiagram
-    class AuthManager {
-        -Dict users
-        -str current_user
-        +login(username, password) bool
-        +logout() void
-        +is_authenticated() bool
-        +get_current_user() Dict
-        +has_role_access(role) bool
-        -_hash_password(password) str
-        -_verify_password(password, hash) bool
-    }
-```
-
-### AI Integration
+### Application Services
 
 ```mermaid
 classDiagram
-    class AIInsightsGenerator {
-        -str api_token
-        -str model_name
-        +generate_insights(summary, analysis_type) str
-        -_call_huggingface_api(prompt) str
-        -_generate_fallback_insights(summary, analysis_type) str
+
+    class UserService {
+        -UserRepository userRepo
+        -OTPService otpService
+        -KYCProvider kycProvider
+        +register(RegisterRequest) User
+        +verifyOTP(phone, otp) bool
+        +linkBankAccount(userId, iban) BankAccount
+        +completeKYC(userId, documents) KYCResult
+        +getProfile(userId) UserProfile
+        +updateProfile(userId, data) User
     }
 
-    class BIAgent {
-        -DataLoader data_loader
-        -AIInsightsGenerator ai_generator
-        -List conversation_history
-        +chat(query, unified_data) Dict
-        -_classify_query(query) str
-        -_analyze_trends(query, data) Dict
-        -_detect_anomalies(query, data) Dict
-        -_simulate_scenario(query, data) Dict
-        -_answer_data_question(query, data) Dict
-        -_format_trend_response(query, results) str
-        -_format_anomaly_response(query, results) str
-        -_format_scenario_response(query, results) str
-        -_extract_visualization_data(results, query_type) Dict
-    }
-```
-
----
-
-## Analytics Tools Classes
-
-```mermaid
-classDiagram
-    class TrendAnalysis {
-        +extract_trends(df, date_col, value_col, method, period) Dict
-        +detect_seasonality(df, date_col, value_col, period) Dict
-        -_aggregate_by_period(df, date_col, value_col, period) DataFrame
-        -_calculate_trend(df, date_col, value_col, method, period) Dict
-        -_calculate_seasonality_strength(values) str
+    class MerchantService {
+        -MerchantRepository merchantRepo
+        -QRCodeService qrService
+        -KYBProvider kybProvider
+        +onboardMerchant(MerchantRequest) Merchant
+        +approveMerchant(merchantId) Merchant
+        +suspendMerchant(merchantId, reason) Merchant
+        +rateMerchant(merchantId, customerId, rating) MerchantRating
+        +getSettlementReport(merchantId, dateRange) Report
     }
 
-    class AnomalyDetection {
-        +detect_anomalies(df, date_col, value_col, method, threshold) Dict
-        +get_anomaly_summary(df, metric, include_multivariate) Dict
-        -_detect_anomalies_pandas(df, date_col, value_col, method, threshold) Dict
-        -_calculate_anomalies(df, date_col, value_col, method, threshold) Dict
+    class PaymentService {
+        -PaymentRepository paymentRepo
+        -FraudEngine fraudEngine
+        -BankingGateway bankGateway
+        -LoyaltyService loyaltyService
+        -EventPublisher eventPublisher
+        +initiatePayment(PaymentRequest) Payment
+        +processPayment(paymentId) Payment
+        +reversePayment(paymentId, reason) Payment
+        +getPaymentStatus(paymentId) PaymentStatus
     }
 
-    class ScenarioSimulation {
-        +simulate_promotion(df, discount_pct, duration_days, price_elasticity) Dict
-        +simulate_price_change(df, price_change_pct, price_elasticity) Dict
-    }
-```
-
----
-
-## Complete Class Diagram
-
-```mermaid
-classDiagram
-    %% Data Layer
-    class DataLoader {
-        +load_all_data()
-        +get_unified_data()
-        +filter_by_region()
+    class PaymentOrchestrator {
+        -PaymentService paymentService
+        -FraudEngine fraudEngine
+        -BankingGateway bankGateway
+        -NotificationService notifier
+        +executePaymentSaga(PaymentRequest) PaymentResult
+        -validatePayment(request) ValidationResult
+        -checkFraud(payment) FraudResult
+        -routeToBank(payment) BankResponse
+        -handleFailure(payment, error) void
     }
 
-    %% Business Logic
-    class AuthManager {
-        +login()
-        +logout()
-        +get_current_user()
+    class TransactionService {
+        -TransactionRepository txRepo
+        -ArchiveService archiveService
+        -ReceiptService receiptService
+        +getHistory(userId, filters) Page~Transaction~
+        +getTransactionDetail(txId) TransactionDetail
+        +generateReceipt(txId) Receipt
+        +emailReceipt(txId, email) void
+        +archiveOldTransactions() void
     }
 
-    class AIInsightsGenerator {
-        +generate_insights()
+    class QRCodeService {
+        -QRCodeFactory qrFactory
+        -QRCodeRepository qrRepo
+        -CDNService cdn
+        +generateStaticQR(ownerId) QRCode
+        +generateDynamicQR(ownerId, amount) QRCode
+        +decodeQR(payload) QRPayload
+        +downloadQR(qrId, format) ByteArray
     }
 
-    class BIAgent {
-        +chat()
-        -_classify_query()
-        -_analyze_trends()
-        -_detect_anomalies()
-        -_simulate_scenario()
+    class NotificationService {
+        -PushProvider pushProvider
+        -SMSProvider smsProvider
+        -EmailProvider emailProvider
+        -PreferenceStore preferences
+        +sendPaymentConfirmation(payment) void
+        +sendFraudAlert(alert) void
+        +sendReceipt(txId, email) void
+        +getUserPreferences(userId) NotificationPrefs
+        +updatePreferences(userId, prefs) void
     }
 
-    %% Analytics Tools
-    class TrendAnalysis {
-        +extract_trends()
-        +detect_seasonality()
+    class FraudEngine {
+        -RuleEngine ruleEngine
+        -MLScoringService mlService
+        -DeviceFingerprintService deviceService
+        -VelocityAggregator velocity
+        +scoreTransaction(payment) FraudResult
+        +getAlertQueue() List~FraudAlert~
+        +reviewAlert(alertId, decision) FraudAlert
     }
 
-    class AnomalyDetection {
-        +detect_anomalies()
-        +get_anomaly_summary()
+    class LoyaltyService {
+        -LoyaltyRepository loyaltyRepo
+        -PointsCalculator calculator
+        +creditPoints(userId, txAmount) void
+        +debitPoints(userId, points) void
+        +getStatus(userId) LoyaltyAccount
+        +evaluateTiers() void
+        +calculateRedemptionValue(points) Money
     }
 
-    class ScenarioSimulation {
-        +simulate_promotion()
-        +simulate_price_change()
+    class CashbackService {
+        -CampaignRepository campaignRepo
+        -BudgetTracker budgetTracker
+        +createCampaign(CampaignRequest) CashbackCampaign
+        +checkEligibility(cardBIN, amount) CashbackOffer
+        +applyCashback(paymentId) Money
+        +getCampaignStats(campaignId) CampaignStats
     }
 
-    %% Relationships
-    BIAgent --> DataLoader : uses
-    BIAgent --> AIInsightsGenerator : uses
-    BIAgent --> TrendAnalysis : uses
-    BIAgent --> AnomalyDetection : uses
-    BIAgent --> ScenarioSimulation : uses
-    DataLoader --> DataFrame : creates
+    PaymentOrchestrator --> PaymentService
+    PaymentOrchestrator --> FraudEngine
+    PaymentOrchestrator --> NotificationService
+    PaymentService --> LoyaltyService
+    PaymentService --> CashbackService
 ```
 
 ---
 
-## Class Relationships
+## Infrastructure Layer
 
-### Key Relationships
+### Repositories
 
-| Relationship | Description | Example |
-|--------------|-------------|---------|
-| **Composition** | Strong ownership | DataLoader → Unified DataFrame |
-| **Association** | Usage dependency | BIAgent → DataLoader |
-| **Dependency** | Tool usage | BIAgent → TrendAnalysis |
-| **Aggregation** | Collection | DataLoader → Multiple DataFrames |
+```mermaid
+classDiagram
 
-1. **DataLoader → Unified DataFrame**: Creates and maintains unified data model
-2. **BIAgent → Analytics Tools**: Dynamically selects and uses appropriate tools
-3. **AuthManager → User Sessions**: Manages authentication state
-4. **AIInsightsGenerator → Hugging Face API**: External service integration
+    class UserRepository {
+        <<interface>>
+        +findById(UUID) User
+        +findByPhone(PhoneNumber) User
+        +save(User) User
+        +update(User) User
+    }
+
+    class PaymentRepository {
+        <<interface>>
+        +findById(UUID) Payment
+        +findByIdempotencyKey(String) Payment
+        +save(Payment) Payment
+        +updateStatus(UUID, PaymentStatus) void
+    }
+
+    class TransactionRepository {
+        <<interface>>
+        +findByUserId(UUID, Filters, Pageable) Page~Transaction~
+        +findById(UUID) Transaction
+        +save(Transaction) Transaction
+        +archiveBefore(DateTime) int
+    }
+
+    class MerchantRepository {
+        <<interface>>
+        +findById(UUID) Merchant
+        +findByStatus(MerchantStatus) List~Merchant~
+        +save(Merchant) Merchant
+        +updateRating(UUID, Decimal) void
+    }
+
+    class PostgresUserRepository {
+        +findById(UUID) User
+        +findByPhone(PhoneNumber) User
+        +save(User) User
+        +update(User) User
+    }
+
+    class PostgresPaymentRepository {
+        +findById(UUID) Payment
+        +findByIdempotencyKey(String) Payment
+        +save(Payment) Payment
+        +updateStatus(UUID, PaymentStatus) void
+    }
+
+    UserRepository <|.. PostgresUserRepository
+    PaymentRepository <|.. PostgresPaymentRepository
+```
+
+### External Adapters
+
+```mermaid
+classDiagram
+
+    class BankingGateway {
+        <<interface>>
+        +debit(BankAccount, Money, ref) BankResponse
+        +credit(BankAccount, Money, ref) BankResponse
+        +validateIBAN(IBAN) ValidationResult
+        +getBalance(BankAccount) Money
+    }
+
+    class BankAAdapter {
+        -HttpClient client
+        -CircuitBreaker cb
+        +debit(BankAccount, Money, ref) BankResponse
+        +credit(BankAccount, Money, ref) BankResponse
+        +validateIBAN(IBAN) ValidationResult
+        +getBalance(BankAccount) Money
+    }
+
+    class BankBAdapter {
+        -HttpClient client
+        -CircuitBreaker cb
+        +debit(BankAccount, Money, ref) BankResponse
+        +credit(BankAccount, Money, ref) BankResponse
+    }
+
+    class WalletAdapter {
+        -HttpClient client
+        -CircuitBreaker cb
+        +debit(BankAccount, Money, ref) BankResponse
+        +credit(BankAccount, Money, ref) BankResponse
+    }
+
+    class BankRouter {
+        -Map~String, BankingGateway~ adapters
+        -RouteStrategy strategy
+        +route(payment) BankingGateway
+        +getHealthStatus() Map~String, HealthStatus~
+    }
+
+    BankingGateway <|.. BankAAdapter
+    BankingGateway <|.. BankBAdapter
+    BankingGateway <|.. WalletAdapter
+    BankRouter --> BankingGateway
+```
+
+---
+
+## Relationship Details
+
+### Entity Relationships
+
+| Source | Target | Type | Description |
+|--------|--------|------|-------------|
+| User | BankAccount | 1:N | User can link multiple bank accounts |
+| User | Payment (sender) | 1:N | User sends multiple payments |
+| User | Transaction | 1:N | User has many transactions |
+| User | LoyaltyAccount | 1:1 | Auto-enrolled on registration |
+| User | QRCode | 1:N | User can have multiple QR codes |
+| Merchant | Payment (recipient) | 1:N | Merchant receives many payments |
+| Merchant | MerchantRating | 1:N | Merchant has many ratings |
+| Merchant | QRCode | 1:1 | Merchant has one static QR |
+| Payment | Transaction | 1:2 | Each payment creates 2 transactions (debit + credit) |
+| Payment | FraudAlert | 1:0..1 | Payment may trigger a fraud alert |
+| CashbackCampaign | Payment | 1:N | Campaign applies to eligible payments |
+
+### Aggregates
+
+| Aggregate Root | Entities | Value Objects |
+|---------------|----------|---------------|
+| User | BankAccount | PhoneNumber, IBAN |
+| Merchant | MerchantRating | GeoLocation |
+| Payment | Transaction, FraudAlert | Money, QRPayload |
+| LoyaltyAccount | — | LoyaltyTier |
+| CashbackCampaign | — | CardNetwork, Money |
+
+---
+
+**Last Updated**: February 2026
+**Version**: 1.0
+**Status**: Design Complete
