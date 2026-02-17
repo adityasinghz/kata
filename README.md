@@ -1,21 +1,40 @@
-# AI-Driven Fleet Management System - Design Kata
+# AI-Driven Fleet Management Optimization Platform — Design Kata
 
-## Problem Statement
-We, as a technology-driven fleet management company, are seeking to develop an intelligent platform that leverages AI to optimize vehicle utilization, reduce operational costs, and enhance driver safety. Current solutions are fragmented, reactive, and lack predictive capabilities, making it difficult for fleet operators to proactively manage maintenance, route planning, and driver behavior. The envisioned platform will provide real-time insights, predictive analytics, and automated recommendations to fleet managers, drivers, and maintenance teams. This will enable data-driven decisions, minimize vehicle downtime, and improve overall fleet efficiency.
-
-## Context
-Fleet operators face challenges in tracking vehicle health, predicting maintenance needs, and optimizing routes, often resulting in unexpected breakdowns, increased costs, and safety risks. Existing systems offer basic GPS tracking and manual reporting but lack advanced analytics, AI-driven predictions, and automated workflows. There is a growing demand for sustainable, cost-effective, and safe fleet operations, especially as companies scale and regulatory requirements increase. An AI-powered platform presents a strong opportunity to transform fleet management from reactive to proactive, driving business growth and customer satisfaction.
+## Overview
+This design kata models an **AI-Powered Fleet Management Platform** that leverages real-time telematics, predictive analytics, and automated workflows to transform fleet operations from reactive to proactive. The platform optimizes vehicle utilization, reduces operational costs, enhances driver safety, and tracks environmental sustainability.
 
 ## Documentation Index
-- **[KEY_REQUIREMENTS.md](./KEY_REQUIREMENTS.md)**: Functional and non-functional requirements.
-- **[ACTORS_AND_USE_CASES.md](./ACTORS_AND_USE_CASES.md)**: Actors and Use Cases.
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)**: Technical Architecture and Microservices.
-- **[API_SPECIFICATION.md](./API_SPECIFICATION.md)**: API Definitions.
-- **[DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md)**: ER Diagram and Schema.
-- **[CLASS_DIAGRAM.md](./CLASS_DIAGRAM.md)**: Domain Model.
-- **[SEQUENCE_DIAGRAMS.md](./SEQUENCE_DIAGRAMS.md)**: Sequence Diagrams.
-- **[FLOW_CHART.md](./FLOW_CHART.md)**: Process Flows.
-- **[STATE_DIAGRAM.md](./STATE_DIAGRAM.md)**: State Diagrams.
-- **[ACTIVITY_DIAGRAM.md](./ACTIVITY_DIAGRAM.md)**: Activity Diagrams.
-- **[OBJECT_DIAGRAM.md](./OBJECT_DIAGRAM.md)**: Object Diagrams.
-- **[GUIDING_PRINCIPLES.md](./GUIDING_PRINCIPLES.md)**: Usage of SOLID, KISS, YAGNI.
+
+### 1. Requirements & Business Analysis
+- **[FUNCTIONAL_REQUIREMENTS.md](./FUNCTIONAL_REQUIREMENTS.md)**: 12 Functional Requirements (User Registration, Vehicle Tracking, Predictive Maintenance, Route Optimization, etc.) + 6 Non-Functional Requirements.
+- **[ACTORS_AND_USE_CASES.md](./ACTORS_AND_USE_CASES.md)**: 7 Actors (Fleet Manager, Driver, Maintenance Staff, Admin, AI Engine, IoT, Third-Party) and 11 detailed Use Cases with Mermaid use case diagram.
+
+### 2. Architecture & Microservices
+- **[MICROSERVICES.md](./MICROSERVICES.md)**: 12 Microservices with bounded context identification, service responsibilities, owned data, key APIs, and inter-service communication patterns (REST, Kafka, MQTT, WebSocket).
+
+### 3. Technical Diagrams
+- **[SEQUENCE_DIAGRAMS.md](./SEQUENCE_DIAGRAMS.md)**: 4 Sequence Diagrams — Vehicle Onboarding, Predictive Maintenance Alert, Route Optimization & Dynamic Reroute, Driver Behavior Monitoring.
+- **[CLASS_DIAGRAM.md](./CLASS_DIAGRAM.md)**: Domain, Service, and Infrastructure layer class diagrams organized by bounded context (Fleet Asset, Driver, Maintenance, Route, Access Control).
+- **[ER_DIAGRAM.md](./ER_DIAGRAM.md)**: Full ERD with 20 table definitions (PostgreSQL + TimescaleDB), column specs, and strategic indexes.
+- **[STATE_DIAGRAM.md](./STATE_DIAGRAM.md)**: State machines for Vehicle, Maintenance Work Order, Driver, Route, and Alert lifecycles.
+- **[ACTIVITY_DIAGRAM.md](./ACTIVITY_DIAGRAM.md)**: 4 Activity workflows — Fleet Onboarding, Predictive Maintenance, Route Planning & Execution, Driver Behavior Review.
+- **[FLOWCHART.md](./FLOWCHART.md)**: 4 Decision flowcharts — Maintenance Decision Engine, Route Selection, Driver Risk Assessment, Alert Escalation.
+- **[OBJECT_DIAGRAM.md](./OBJECT_DIAGRAM.md)**: 3 Runtime object snapshots — Normal Operations, Predictive Maintenance Triggered, Route In Progress.
+
+### 4. API & Integration
+- **[API_SPECIFICATION.md](./API_SPECIFICATION.md)**: RESTful API definitions for 10 service areas with request/response JSON examples and error format.
+
+### 5. Guiding Principles
+- **[GUIDING_PRINCIPLES.md](./GUIDING_PRINCIPLES.md)**: Concrete application of SOLID, KISS, and YAGNI with fleet-specific examples, comparison tables, and design rationale.
+
+## Key Design Highlights
+- **Event-Driven Architecture:** Kafka backbone decouples telematics ingestion from AI analytics, enabling independent scaling.
+- **AI-First:** Predictive maintenance (ML risk scores), route optimization (constraint solver), and driver behavior analysis (real-time event detection).
+- **12 Microservices:** Decomposed by DDD bounded contexts with clear ownership, independent data stores, and async communication.
+- **Comprehensive Observability:** Audit logs, alert escalation chains, and immutable event streams for full traceability.
+- **Sustainability Built-In:** CO₂ emission tracking and AI-driven green recommendations as first-class features.
+
+## Status
+- **Version:** 1.0
+- **Status:** Design Complete
+- **Last Updated:** February 2026
