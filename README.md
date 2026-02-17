@@ -24,7 +24,10 @@ This design kata models an **AI-Powered Fleet Management Platform** that leverag
 ### 4. API & Integration
 - **[API_SPECIFICATION.md](./API_SPECIFICATION.md)**: RESTful API definitions for 10 service areas with request/response JSON examples and error format.
 
-### 5. Guiding Principles
+### 5. QA & Testing
+- **[TEST_STRATEGY.md](./TEST_STRATEGY.md)**: 60+ test cases mapped to FRs, API test specs, integration test plan, performance/load profiles, security tests (OWASP Top 10), edge cases, and acceptance criteria.
+
+### 6. Guiding Principles
 - **[GUIDING_PRINCIPLES.md](./GUIDING_PRINCIPLES.md)**: Concrete application of SOLID, KISS, and YAGNI with fleet-specific examples, comparison tables, and design rationale.
 
 ## Key Design Highlights
