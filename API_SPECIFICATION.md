@@ -1,571 +1,479 @@
-# API Specification — AI-Driven Fleet Management Optimization Platform
+# Mitra Finance — API Specification
 
-All endpoints are prefixed with `/api/v1`.
-Authentication: Bearer Token (JWT via OAuth 2.0).
-Content-Type: `application/json`.
+> **⚠️ Core Requirements**: APIs map to [ACTORS_AND_USE_CASES.md](./ACTORS_AND_USE_CASES.md) and are secured per [SECURITY_DESIGN.md](./SECURITY_DESIGN.md).
+
+All APIs are:
+- **Base URL**: `https://api.mitrafinance.in/v1`
+- **Auth**: `Authorization: Bearer <JWT>` (Mitra token) or `X-Device-Cert: <certificate>` (mTLS)
+- **Content-Type**: `application/json` (unless specified as `application/protobuf` for sync endpoints)
+- **Error Format**: `{ "error": { "code": "ERR_CODE", "message": "...", "requestId": "uuid" } }`
+
+---
 
 ## Table of Contents
-1. [Authentication](#1-authentication)
-2. [Vehicle Management](#2-vehicle-management)
-3. [Driver Management](#3-driver-management)
-4. [Route Optimization](#4-route-optimization)
-5. [Maintenance](#5-maintenance)
-6. [Driver Behavior & Scoring](#6-driver-behavior--scoring)
-7. [Alerts & Notifications](#7-alerts--notifications)
-8. [Analytics & Dashboard](#8-analytics--dashboard)
-9. [Cost Management](#9-cost-management)
-10. [Sustainability](#10-sustainability)
+1. [Authentication & KYC](#1-authentication--kyc)
+2. [Customers](#2-customers)
+3. [Loan Applications](#3-loan-applications)
+4. [Credit Interview & Scoring](#4-credit-interview--scoring)
+5. [Consent Management](#5-consent-management)
+6. [Sync (Offline-First)](#6-sync-offline-first)
+7. [Loan Workflow & Decisions](#7-loan-workflow--decisions)
+8. [Notifications](#8-notifications)
+9. [Admin & Reporting](#9-admin--reporting)
 
 ---
 
-## 1. Authentication
+## 1. Authentication & KYC
 
-### Login
-`POST /auth/login`
-Authenticates a user and returns a JWT.
+### POST `/auth/kyc/initiate`
+Initiate Aadhaar OTP for customer KYC.
 
-**Body:**
+**Request**:
 ```json
 {
-  "email": "manager@fleet.com",
-  "password": "secret123"
+  "phoneNumber": "+919876543210",
+  "mitraId": "uuid-mitra-123"
 }
 ```
-
-**Response (200):**
+**Response** `202 Accepted`:
 ```json
 {
-  "access_token": "eyJhbGciOiJSUzI1NiIs...",
-  "refresh_token": "dGhpcyBpcyBhIHJlZnJlc2g...",
-  "expires_in": 3600,
-  "user": {
-    "id": "u-001",
-    "email": "manager@fleet.com",
-    "role": "FLEET_MANAGER"
-  }
+  "sessionId": "kyc-session-uuid",
+  "otpExpiry": "2026-02-20T11:54:06Z",
+  "message": "OTP sent to Aadhaar-linked mobile"
 }
 ```
-
-### Register User
-`POST /auth/register`
-Creates a new user account (Admin only).
-
-**Body:**
-```json
-{
-  "email": "driver@fleet.com",
-  "full_name": "Alex Driver",
-  "role": "DRIVER",
-  "phone": "+1-555-0100"
-}
-```
+**Errors**: `400 BAD_PHONE`, `503 UIDAI_UNAVAILABLE`
 
 ---
 
-## 2. Vehicle Management
+### POST `/auth/kyc/verify`
+Verify Aadhaar OTP and retrieve masked eKYC data.
 
-### List Vehicles
-`GET /vehicles`
-Retrieves vehicles with optional filtering.
-
-**Query Parameters:**
-- `status` (String): 'ACTIVE', 'IN_MAINTENANCE', 'DECOMMISSIONED'
-- `fuel_type` (String): 'DIESEL', 'ELECTRIC', 'HYBRID'
-- `page` (Integer): Page number (default: 1)
-- `limit` (Integer): Items per page (default: 20)
-
-**Response (200):**
+**Request**:
 ```json
 {
-  "data": [
-    {
-      "id": "v-001",
-      "vin": "1HGBH41JXMN109186",
-      "make": "Volvo",
-      "model": "FH16",
-      "year": 2023,
-      "license_plate": "AB-1234",
-      "fuel_type": "DIESEL",
-      "status": "ACTIVE",
-      "current_odometer_km": 45230.5,
-      "health_score": 87
-    }
-  ],
-  "pagination": { "page": 1, "limit": 20, "total": 142 }
+  "sessionId": "kyc-session-uuid",
+  "virtualId": "9876 5432 1234 5678",
+  "otp": "847392"
 }
 ```
-
-### Create Vehicle
-`POST /vehicles`
-Registers a new vehicle.
-
-**Body:**
+**Response** `200 OK`:
 ```json
 {
-  "vin": "1HGBH41JXMN109186",
-  "make": "Volvo",
-  "model": "FH16",
-  "year": 2023,
-  "license_plate": "AB-1234",
-  "fuel_type": "DIESEL"
-}
-```
-
-**Response (201):**
-```json
-{
-  "id": "v-001",
-  "status": "PENDING",
-  "message": "Vehicle registered. Pair a telematics device to activate."
-}
-```
-
-### Pair Telematics Device
-`POST /vehicles/{id}/pair-device`
-Pairs a telematics device with a vehicle.
-
-**Body:**
-```json
-{
-  "device_serial_number": "TEL-2024-00042"
-}
-```
-
-**Response (200):**
-```json
-{
-  "vehicle_id": "v-001",
-  "device_id": "d-042",
-  "firmware_version": "2.1.0",
-  "status": "ACTIVE",
-  "message": "Device paired. Telemetry streaming active."
-}
-```
-
-### Get Vehicle Health Report
-`GET /vehicles/{id}/health`
-Returns AI-generated health assessment for a vehicle.
-
-**Response (200):**
-```json
-{
-  "vehicle_id": "v-001",
-  "overall_health_score": 87,
-  "components": [
-    { "name": "BRAKES", "risk_score": 0.82, "status": "AT_RISK", "recommendation": "Schedule brake pad replacement within 7 days" },
-    { "name": "BATTERY", "risk_score": 0.35, "status": "HEALTHY", "recommendation": null },
-    { "name": "ENGINE", "risk_score": 0.12, "status": "HEALTHY", "recommendation": null }
-  ],
-  "last_assessed_at": "2026-02-17T10:00:00Z"
-}
-```
-
----
-
-## 3. Driver Management
-
-### Create Driver
-`POST /drivers`
-Onboards a new driver.
-
-**Body:**
-```json
-{
-  "full_name": "Alex Driver",
-  "license_number": "DL-2023-5678",
-  "license_expiry": "2028-06-15",
-  "phone": "+1-555-0100"
-}
-```
-
-### Assign Driver to Vehicle
-`POST /drivers/{id}/assign`
-Creates a driver-vehicle assignment.
-
-**Body:**
-```json
-{
-  "vehicle_id": "v-001",
-  "start_date": "2026-03-01",
-  "end_date": null
-}
-```
-
-**Response (201):**
-```json
-{
-  "assignment_id": "a-001",
-  "driver_id": "d-007",
-  "vehicle_id": "v-001",
-  "status": "ACTIVE"
-}
-```
-
-### Get Driver Profile
-`GET /drivers/{id}`
-Returns driver details including safety score and compliance status.
-
-**Response (200):**
-```json
-{
-  "id": "d-007",
-  "full_name": "Alex Driver",
-  "safety_score": 81.5,
-  "status": "ACTIVE",
-  "license_expiry": "2028-06-15",
-  "compliance_status": "VALID",
-  "current_vehicle": { "id": "v-001", "license_plate": "AB-1234" },
-  "recent_trips": 47
-}
-```
-
----
-
-## 4. Route Optimization
-
-### Optimize Route
-`POST /routes/optimize`
-Calculates the optimal route for a set of stops.
-
-**Body:**
-```json
-{
-  "vehicle_id": "v-001",
-  "stops": [
-    { "name": "Warehouse A", "lat": 40.7128, "lng": -74.0060 },
-    { "name": "Client B", "lat": 40.7580, "lng": -73.9855 },
-    { "name": "Client C", "lat": 40.6892, "lng": -74.0445 },
-    { "name": "Client D", "lat": 40.7282, "lng": -73.7949 }
-  ],
-  "constraints": {
-    "optimize_for": "FUEL_AND_TIME",
-    "max_driving_hours": 8,
-    "delivery_windows": [
-      { "stop_name": "Client B", "window_start": "09:00", "window_end": "12:00" }
-    ]
-  }
-}
-```
-
-**Response (200):**
-```json
-{
-  "route_id": "r-001",
-  "optimized_order": ["Warehouse A", "Client C", "Client B", "Client D"],
-  "total_distance_km": 142.3,
-  "estimated_fuel_l": 18.5,
-  "estimated_duration_min": 195,
-  "etas": [
-    { "stop": "Warehouse A", "eta": "2026-02-17T08:00:00Z" },
-    { "stop": "Client C", "eta": "2026-02-17T09:15:00Z" },
-    { "stop": "Client B", "eta": "2026-02-17T10:30:00Z" },
-    { "stop": "Client D", "eta": "2026-02-17T12:45:00Z" }
-  ]
-}
-```
-
-### Request Dynamic Reroute
-`POST /routes/{id}/reroute`
-Triggers recalculation of a specific segment due to traffic/weather changes.
-
-**Body:**
-```json
-{
-  "reason": "TRAFFIC_INCIDENT",
-  "affected_segment": { "from": "Client C", "to": "Client B" }
-}
-```
-
----
-
-## 5. Maintenance
-
-### List Work Orders
-`GET /maintenance/work-orders`
-Get all maintenance work orders with optional filters.
-
-**Query Parameters:**
-- `vehicle_id` (UUID): Filter by vehicle
-- `status` (String): 'OPEN', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED'
-- `urgency` (String): 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'
-
-**Response (200):**
-```json
-{
-  "data": [
-    {
-      "id": "wo-001",
-      "vehicle_id": "v-001",
-      "vehicle_plate": "AB-1234",
-      "component": "BRAKES",
-      "status": "OPEN",
-      "urgency": "HIGH",
-      "risk_score": 0.82,
-      "recommended_action": "Replace brake pad set — predicted failure in 7 days",
-      "created_at": "2026-02-17T10:00:00Z"
-    }
-  ]
-}
-```
-
-### Complete Work Order
-`PUT /maintenance/work-orders/{id}/complete`
-Marks a work order as completed with log details.
-
-**Body:**
-```json
-{
-  "action_taken": "Replaced front brake pad set and inspected rotors",
-  "parts_replaced": ["Brake Pad Set (Front)", "Brake Fluid"],
-  "cost_amount": 485.00
-}
-```
-
----
-
-## 6. Driver Behavior & Scoring
-
-### Get Driver Score History
-`GET /drivers/{id}/scores`
-Returns driver safety score trend.
-
-**Query Parameters:**
-- `period` (String): 'WEEK', 'MONTH', 'QUARTER'
-
-**Response (200):**
-```json
-{
-  "driver_id": "d-007",
-  "current_score": 81.5,
-  "period": "MONTH",
-  "trend": "IMPROVING",
-  "history": [
-    { "date": "2026-02-10", "score": 78 },
-    { "date": "2026-02-11", "score": 80 },
-    { "date": "2026-02-12", "score": 82 }
-  ],
-  "top_events": [
-    { "type": "HARSH_BRAKE", "count": 12 },
-    { "type": "SPEEDING", "count": 5 }
-  ]
-}
-```
-
-### Get Trip Summary
-`GET /trips/{id}`
-Returns detailed trip summary with driving events.
-
-**Response (200):**
-```json
-{
-  "id": "t-001",
-  "driver_id": "d-007",
-  "vehicle_id": "v-001",
-  "safety_score": 72,
-  "distance_km": 148.3,
-  "fuel_consumed_l": 19.2,
-  "duration_min": 210,
-  "events": [
-    { "type": "HARSH_BRAKE", "severity": "HIGH", "lat": 40.7128, "lng": -74.006, "time": "2026-02-17T09:32:00Z" }
-  ]
-}
-```
-
----
-
-## 7. Alerts & Notifications
-
-### Get Active Alerts
-`GET /alerts`
-Returns alerts for the authenticated user.
-
-**Query Parameters:**
-- `status` (String): 'PENDING', 'ACKNOWLEDGED'
-- `type` (String): 'MAINTENANCE', 'DRIVER_BEHAVIOR', 'GEOFENCE', 'ROUTE'
-
-**Response (200):**
-```json
-{
-  "data": [
-    {
-      "id": "alert-99",
-      "type": "MAINTENANCE",
-      "severity": "HIGH",
-      "message": "Vehicle AB-1234: Brake pads at 82% failure risk — Schedule replacement within 7 days",
-      "status": "PENDING",
-      "created_at": "2026-02-17T10:00:00Z"
-    }
-  ]
-}
-```
-
-### Acknowledge Alert
-`PUT /alerts/{id}/acknowledge`
-
-**Response (200):**
-```json
-{ "id": "alert-99", "status": "ACKNOWLEDGED", "acknowledged_at": "2026-02-17T10:05:00Z" }
-```
-
----
-
-## 8. Analytics & Dashboard
-
-### Get Fleet KPIs
-`GET /analytics/kpis`
-
-**Response (200):**
-```json
-{
-  "fleet_utilization_pct": 78.5,
-  "avg_fuel_cost_per_km": 0.42,
-  "avg_maintenance_cost_monthly": 12450.00,
-  "avg_driver_safety_score": 83.2,
-  "on_time_delivery_pct": 91.3,
-  "total_active_vehicles": 142,
-  "total_active_drivers": 128,
-  "period": "2026-02"
-}
-```
-
-### Get AI Insights
-`GET /analytics/insights`
-
-**Response (200):**
-```json
-{
-  "insights": [
-    {
-      "id": "ins-01",
-      "category": "FUEL_OPTIMIZATION",
-      "message": "Route A is 18% less fuel-efficient than Route B for Zone C deliveries. Switching saves ~$340/month.",
-      "confidence": 0.92,
-      "potential_savings": 340.00
-    },
-    {
-      "id": "ins-02",
-      "category": "MAINTENANCE",
-      "message": "3 vehicles have brake risk scores above 70%. Schedule preventive maintenance this week.",
-      "confidence": 0.87
-    }
-  ]
-}
-```
-
----
-
-## 9. Cost Management
-
-### Get Cost Summary
-`GET /costs/summary`
-
-**Query Parameters:**
-- `period` (String): 'MONTH', 'QUARTER', 'YEAR'
-- `vehicle_id` (UUID): Optional filter
-
-**Response (200):**
-```json
-{
-  "period": "2026-02",
-  "total_cost": 87450.00,
-  "breakdown": {
-    "fuel": 42300.00,
-    "maintenance": 18500.00,
-    "tolls": 8200.00,
-    "insurance": 12450.00,
-    "other": 6000.00
+  "verified": true,
+  "maskedAadhaar": "XXXX-XXXX-3210",
+  "ekycData": {
+    "name": "Ramesh Kumar",
+    "dob": "1985-04-12",
+    "gender": "M",
+    "address": "Village Sarai, Dist. Varanasi, UP",
+    "photoBase64": "<base64-encoded-face-image>"
   },
-  "cost_per_km": 0.61,
-  "vs_previous_period": "-3.2%"
+  "consentRequired": ["AADHAAR_EKYC"],
+  "biometricTokenExpiry": "2026-02-20T19:49:06Z"
 }
 ```
-
-### Get Cost Recommendations
-`GET /costs/recommendations`
-
-**Response (200):**
-```json
-{
-  "recommendations": [
-    {
-      "id": "cr-01",
-      "category": "ROUTE",
-      "description": "Consolidating Tue/Thu Zone C deliveries saves $1,200/month in fuel and tolls",
-      "estimated_savings_monthly": 1200.00
-    }
-  ]
-}
-```
+**Errors**: `401 OTP_INVALID`, `410 OTP_EXPIRED`
 
 ---
 
-## 10. Sustainability
+### POST `/auth/mitra/login`
+Mitra app login using phone + TOTP.
 
-### Get Emissions Report
-`GET /sustainability/emissions`
-
-**Query Parameters:**
-- `period` (String): 'MONTH', 'QUARTER', 'YEAR'
-
-**Response (200):**
+**Request**:
 ```json
 {
-  "period": "2026-02",
-  "total_co2_kg": 28450.0,
-  "per_vehicle_avg_kg": 200.35,
-  "per_km_g": 142.5,
-  "vs_target": "-8.2%",
-  "target_co2_kg": 31000.0,
-  "top_emitters": [
-    { "vehicle_id": "v-012", "license_plate": "XY-5678", "co2_kg": 890.0 }
-  ]
+  "phoneNumber": "+919876543210",
+  "totp": "847392",
+  "deviceCertificate": "-----BEGIN CERTIFICATE-----..."
 }
 ```
-
-### Get Green Recommendations
-`GET /sustainability/recommendations`
-
-**Response (200):**
+**Response** `200 OK`:
 ```json
 {
-  "recommendations": [
-    {
-      "id": "gr-01",
-      "description": "Replacing 5 diesel trucks with EVs reduces annual fleet emissions by 22%",
-      "emission_reduction_pct": 22.0,
-      "investment_required": 375000,
-      "payback_period_months": 36
-    }
-  ]
-}
-```
-
----
-
-## Error Response Format
-
-All error responses follow a consistent format:
-
-```json
-{
-  "error": {
-    "code": "VEHICLE_NOT_FOUND",
-    "message": "Vehicle with ID v-999 does not exist",
-    "status": 404,
-    "timestamp": "2026-02-17T10:00:00Z"
+  "accessToken": "eyJhbGciOiJS...",
+  "refreshToken": "rt-uuid",
+  "expiresIn": 900,
+  "mitraProfile": {
+    "id": "uuid", "name": "Sunita Devi", "region": "Bihar-North"
   }
 }
 ```
 
-| HTTP Status | Usage |
-|-------------|-------|
-| 200 | Success |
-| 201 | Resource created |
-| 400 | Validation error |
-| 401 | Unauthorized (missing/invalid token) |
-| 403 | Forbidden (insufficient role) |
-| 404 | Resource not found |
-| 409 | Conflict (duplicate VIN, schedule conflict) |
-| 422 | Unprocessable (device pairing failed) |
-| 429 | Rate limit exceeded |
-| 500 | Internal server error |
+---
+
+## 2. Customers
+
+### POST `/customers`
+Create a new customer profile post-KYC.
+
+**Request**:
+```json
+{
+  "virtualId": "9876 5432 1234 5678",
+  "maskedAadhaar": "XXXX-XXXX-3210",
+  "name": "Ramesh Kumar",
+  "dialect": "bhojpuri",
+  "mitraId": "uuid-mitra-123",
+  "kycSessionId": "kyc-session-uuid"
+}
+```
+**Response** `201 Created`:
+```json
+{
+  "customerId": "cust-uuid-456",
+  "kycStatus": "VERIFIED",
+  "kycExpiresAt": "2028-02-20T00:00:00Z"
+}
+```
+
+---
+
+### GET `/customers/{customerId}`
+Retrieve customer profile (masked PII only).
+
+**Response** `200 OK`:
+```json
+{
+  "id": "cust-uuid-456",
+  "maskedAadhaar": "XXXX-XXXX-3210",
+  "dialect": "bhojpuri",
+  "kycStatus": "VERIFIED",
+  "abhaLinked": false,
+  "activeLoans": 0
+}
+```
+
+---
+
+## 3. Loan Applications
+
+### POST `/loans`
+Submit a new loan application.
+
+**Request**:
+```json
+{
+  "customerId": "cust-uuid-456",
+  "mitraId": "uuid-mitra-123",
+  "loanType": "AGRICULTURE",
+  "requestedAmount": 35000,
+  "tenureMonths": 12,
+  "interviewId": "intv-uuid-789",
+  "clientIdempotencyKey": "client-generated-uuid"
+}
+```
+**Response** `201 Created`:
+```json
+{
+  "loanId": "loan-uuid-001",
+  "status": "SUBMITTED",
+  "creditScoreId": "score-uuid-001",
+  "creditScore": 672,
+  "riskBand": "MEDIUM",
+  "routedTo": "L1_CREDIT_OFFICER",
+  "expectedDecisionBy": "2026-02-20T15:49:06Z"
+}
+```
+**Errors**: `409 DUPLICATE_APPLICATION` (when idempotencyKey already exists)
+
+---
+
+### GET `/loans/{loanId}`
+Get full loan application details.
+
+**Response** `200 OK`:
+```json
+{
+  "id": "loan-uuid-001",
+  "customerId": "cust-uuid-456",
+  "loanType": "AGRICULTURE",
+  "requestedAmount": 35000,
+  "approvedAmount": null,
+  "status": "UNDER_REVIEW",
+  "creditScore": { "score": 672, "riskBand": "MEDIUM" },
+  "assignedOfficer": { "id": "officer-uuid", "name": "Ananya Sharma" },
+  "documents": [
+    { "type": "UTILITY_BILL", "uploadedAt": "2026-02-20T11:49:06Z", "ocrConfidence": 0.92 }
+  ],
+  "timeline": [
+    { "status": "SUBMITTED", "at": "2026-02-20T11:49:06Z" },
+    { "status": "UNDER_REVIEW", "at": "2026-02-20T11:50:00Z" }
+  ]
+}
+```
+
+---
+
+### POST `/loans/{loanId}/documents`
+Upload a supporting document.
+
+**Content-Type**: `multipart/form-data`
+**Request Fields**: `file` (JPEG/PNG < 5MB), `documentType`, `loanId`
+
+**Response** `201 Created`:
+```json
+{
+  "documentId": "doc-uuid-001",
+  "documentType": "UTILITY_BILL",
+  "ocrExtracted": {
+    "providerName": "UP Power Corporation",
+    "accountHolder": "Ramesh Kumar",
+    "billDate": "2026-01-15",
+    "amountPaid": 840,
+    "paymentStatus": "PAID"
+  },
+  "ocrConfidence": 0.92,
+  "uploadedAt": "2026-02-20T11:49:06Z"
+}
+```
+
+---
+
+## 4. Credit Interview & Scoring
+
+### POST `/interviews`
+Start a new credit interview session.
+
+**Request**:
+```json
+{
+  "loanApplicationId": "loan-uuid-001",
+  "dialect": "bhojpuri",
+  "isOffline": false
+}
+```
+**Response** `201 Created`:
+```json
+{
+  "interviewId": "intv-uuid-789",
+  "firstQuestion": "आपकी मासिक आमदनी क्या है?",
+  "firstQuestionAudioUrl": "https://cdn.mitrafinance.in/tts/q1-bhojpuri.wav"
+}
+```
+
+---
+
+### POST `/interviews/{interviewId}/turns`
+Submit a voice response for the current question.
+
+**Content-Type**: `multipart/form-data`
+**Request Fields**: `audioFile` (WAV 16kHz), `turnSequence`
+
+**Response** `200 OK`:
+```json
+{
+  "turnId": "turn-uuid-001",
+  "transcription": "हमार महीना कमाई डेढ़ हजार रुपइया हऊ",
+  "asrConfidence": 0.87,
+  "extractedFields": {
+    "monthly_income": { "value": 1500, "unit": "INR", "confidence": 0.84 }
+  },
+  "nextQuestion": "आपके परिवार में कितने लोग हैं?",
+  "nextQuestionAudioUrl": "https://cdn.mitrafinance.in/tts/q2-bhojpuri.wav",
+  "isComplete": false
+}
+```
+
+---
+
+### GET `/scores/{scoreId}`
+Retrieve a credit score with explainability.
+
+**Response** `200 OK`:
+```json
+{
+  "id": "score-uuid-001",
+  "score": 672,
+  "riskBand": "MEDIUM",
+  "recommendedMaxAmount": 40000,
+  "recommendedTenureMonths": 18,
+  "topFactors": [
+    { "factor": "UTILITY_PAYMENT_CONSISTENCY", "shapValue": 0.18, "direction": "POSITIVE", "explanation": "12 consecutive on-time electricity bill payments" },
+    { "factor": "MGNREGA_EMPLOYMENT", "shapValue": 0.14, "direction": "POSITIVE", "explanation": "145 days employment in past year" },
+    { "factor": "LOAN_AMOUNT_TO_INCOME_RATIO", "shapValue": -0.09, "direction": "NEGATIVE", "explanation": "Requested amount is 2.3× monthly income" }
+  ],
+  "modelVersion": "lgbm-v2.1-2026Q1",
+  "isOfflineScore": false,
+  "calculatedAt": "2026-02-20T11:50:20Z"
+}
+```
+
+---
+
+## 5. Consent Management
+
+### POST `/consent`
+Grant a new consent.
+
+**Request**:
+```json
+{
+  "customerId": "cust-uuid-456",
+  "consentType": "UTILITY_DATA",
+  "purpose": "To evaluate creditworthiness for loan origination",
+  "expiresAt": "2027-02-20T00:00:00Z",
+  "voiceConsentBase64": "<base64-encoded-wav>",
+  "mitraId": "uuid-mitra-123"
+}
+```
+**Response** `201 Created`:
+```json
+{
+  "consentId": "cons-uuid-001",
+  "status": "GRANTED",
+  "grantedAt": "2026-02-20T11:49:06Z",
+  "expiresAt": "2027-02-20T00:00:00Z"
+}
+```
+
+---
+
+### PUT `/consent/{consentId}/revoke`
+Revoke an existing consent.
+
+**Request**:
+```json
+{
+  "revokedByMitraId": "uuid-mitra-123",
+  "voiceConsentBase64": "<base64-wav-of-revocation>",
+  "reason": "CUSTOMER_REQUEST"
+}
+```
+**Response** `200 OK`:
+```json
+{
+  "consentId": "cons-uuid-001",
+  "status": "REVOKED",
+  "revokedAt": "2026-02-20T12:00:00Z",
+  "processingCompletedBy": "2026-02-23T12:00:00Z"
+}
+```
+
+---
+
+## 6. Sync (Offline-First)
+
+### POST `/sync/batch`
+**Content-Type**: `application/x-protobuf`
+
+Upload a batch of locally queued operations to the server.
+
+**Request Body** (protobuf-serialized):
+```
+SyncBatchRequest {
+  mitraId: "uuid-mitra-123",
+  deviceId: "device-serial-xyz",
+  items: [
+    SyncItem {
+      clientIdempotencyKey: "client-uuid-001",
+      operationType: CREATE,
+      entityType: "LoanApplication",
+      payload: <protobuf-serialized LoanApplication>,
+      priority: 2,
+      createdAt: 1740045946000
+    }
+  ]
+}
+```
+
+**Response** `200 OK` (JSON):
+```json
+{
+  "sessionId": "sync-session-uuid",
+  "itemsReceived": 3,
+  "results": [
+    { "clientIdempotencyKey": "client-uuid-001", "status": "SYNCED", "serverId": "loan-uuid-001" },
+    { "clientIdempotencyKey": "client-uuid-002", "status": "CONFLICT", "resolution": "SERVER_WINS", "serverVersion": "<base64-entity>" }
+  ],
+  "syncedAt": "2026-02-20T11:55:00Z"
+}
+```
+
+---
+
+### GET `/sync/pending-acknowledgements/{mitraId}`
+Fetch server-side updates the device hasn't received yet.
+
+**Response** `200 OK`:
+```json
+{
+  "updates": [
+    { "entityType": "LoanApplication", "entityId": "loan-uuid-001", "newStatus": "APPROVED", "updatedAt": "2026-02-20T11:50:00Z" }
+  ]
+}
+```
+
+---
+
+## 7. Loan Workflow & Decisions
+
+### POST `/loans/{loanId}/decision`
+_Requires Credit Officer or Regional Manager role._
+
+**Request**:
+```json
+{
+  "action": "APPROVE",
+  "approvedAmount": 35000,
+  "approvedTenureMonths": 12,
+  "reasonCode": "GOOD_ALT_DATA",
+  "notes": "Strong MGNREGA record and consistent utility payments."
+}
+```
+**Response** `200 OK`:
+```json
+{
+  "loanId": "loan-uuid-001",
+  "status": "APPROVED",
+  "approvedAt": "2026-02-20T13:05:00Z",
+  "disbursementExpectedBy": "2026-02-21T11:00:00Z"
+}
+```
+
+---
+
+## 8. Notifications
+
+### POST `/notifications/subscribe`
+Register Mitra device for push notifications.
+
+**Request**: `{ "mitraId": "uuid", "fcmToken": "...", "platform": "ANDROID" }`
+**Response** `204 No Content`
+
+---
+
+## 9. Admin & Reporting
+
+### GET `/admin/mitras/{mitraId}/report`
+_Requires Admin or Compliance role._
+
+**Response** `200 OK`:
+```json
+{
+  "mitraId": "uuid-mitra-123",
+  "period": "2026-02",
+  "applicationsSubmitted": 47,
+  "approvalRate": 0.83,
+  "averageCompletionTime": 13.4,
+  "npaRate": 0.021,
+  "syncFailures": 2,
+  "amlFlagsGenerated": 0
+}
+```
+
+---
+
+### GET `/admin/reports/rbi-quarterly`
+_Requires Compliance role._
+
+**Query Params**: `?quarter=2026Q1&format=json|xlsx`
+
+**Response** `200 OK` or redirect to pre-signed S3 URL for xlsx export.
+
+---
+
+**Last Updated**: February 2026
+**Version**: 1.0
+**Status**: Design Complete

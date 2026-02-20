@@ -1,218 +1,342 @@
-# Sequence Diagrams — AI-Driven Fleet Management Optimization Platform
+# Mitra Finance — Sequence Diagrams
 
-> **⚠️ Core Requirements**: Each sequence diagram maps to the functional requirements defined in [FUNCTIONAL_REQUIREMENTS.md](./FUNCTIONAL_REQUIREMENTS.md).
+> **⚠️ Core Requirements**: Each sequence diagram maps to use cases in [ACTORS_AND_USE_CASES.md](./ACTORS_AND_USE_CASES.md) and requirements in [KEY_REQUIREMENTS.md](./KEY_REQUIREMENTS.md).
 
 ## Table of Contents
-1. [Vehicle Onboarding & Telematics Pairing](#vehicle-onboarding--telematics-pairing)
-2. [Predictive Maintenance Alert Flow](#predictive-maintenance-alert-flow)
-3. [Route Optimization & Dynamic Reroute](#route-optimization--dynamic-reroute)
-4. [Driver Behavior Monitoring & Scoring](#driver-behavior-monitoring--scoring)
+1. [Customer KYC & Registration](#1-customer-kyc--registration)
+2. [GenAI Voice Credit Interview](#2-genai-voice-credit-interview)
+3. [Loan Application with Alt Credit Scoring](#3-loan-application-with-alt-credit-scoring)
+4. [Offline Loan Origination & Background Sync](#4-offline-loan-origination--background-sync)
+5. [Loan Approval Routing Workflow](#5-loan-approval-routing-workflow)
+6. [DPDP Consent Revocation](#6-dpdp-consent-revocation)
 
 ---
 
-## Vehicle Onboarding & Telematics Pairing
+## 1. Customer KYC & Registration
 
-**Requirement**: FR-02 (Vehicle Onboarding & Telematics Setup)
-**Use Case**: UC-2 (Onboard Vehicle)
+**Mapped to**: UC1, UC2 | **Requirement**: REQ-2
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant FM as Fleet Manager (UI)
-    participant API as API Gateway
+    actor Customer
+    actor Mitra as Bank Mitra
+    participant App as Mitra App (Android)
+    participant GW as API Gateway
     participant Auth as Auth Service
-    participant VehSvc as Vehicle Mgmt Service
-    participant DB as Database (PostgreSQL)
-    participant IoT as Telematics Ingestion Service
-    participant Notif as Notification Service
+    participant UIDAI as UIDAI Aadhaar API
+    participant Consent as Consent Service
+    participant DB as PostgreSQL
 
-    FM->>API: POST /vehicles {vin, make, model, year, fuelType}
-    API->>Auth: validateToken(jwt)
-    Auth-->>API: Token Valid (Role: FLEET_MANAGER)
-    API->>VehSvc: createVehicle(dto)
+    Mitra->>App: Opens "New Customer" screen
+    App->>App: Check network availability
+    Mitra->>App: Enters customer phone number
+    App->>GW: POST /auth/kyc/initiate {phone}
+    GW->>Auth: Forward request (JWT: Mitra)
+    Auth->>UIDAI: Send OTP to Aadhaar-linked mobile
+    UIDAI-->>Auth: OTP dispatched
+    Auth-->>App: 200 OK — OTP sent
 
-    VehSvc->>DB: BEGIN TRANSACTION
-    VehSvc->>DB: INSERT INTO vehicles (vin, make, model, ...)
-    VehSvc->>DB: INSERT INTO compliance_documents (vehicleId, type, file)
-    VehSvc->>DB: COMMIT
-    DB-->>VehSvc: Vehicle Created (id=V-001)
+    Note over Customer,App: Customer receives OTP on their phone
 
-    VehSvc-->>API: 201 Created {vehicleId: V-001}
-    API-->>FM: Show "Vehicle Registered" success
+    Customer->>Mitra: Speaks / shows OTP
+    Mitra->>App: Enters OTP
+    App->>GW: POST /auth/kyc/verify {VID, OTP}
+    GW->>Auth: Forward
+    Auth->>UIDAI: Verify OTP + fetch eKYC data
+    UIDAI-->>Auth: Masked eKYC {name, DOB, address, photo}
 
-    FM->>API: POST /vehicles/V-001/pair-device {deviceSerialNumber}
-    API->>VehSvc: pairDevice(vehicleId, serialNumber)
-    VehSvc->>IoT: verifyDevice(serialNumber)
+    Note over Auth: Aadhaar raw number NOT stored. Only VID retained.
 
-    alt Device Responds
-        IoT-->>VehSvc: Device Online (firmware v2.1)
-        VehSvc->>DB: UPDATE vehicles SET status='ACTIVE', device_id=D-042
-        VehSvc->>Notif: sendAlert(FM, "Vehicle V-001 is now active and tracking")
-        VehSvc-->>API: 200 OK "Device Paired Successfully"
-        API-->>FM: Show "Device Paired — Tracking Active ✅"
-    else Device Unreachable
-        IoT-->>VehSvc: Timeout / No Response
-        VehSvc-->>API: 422 "Device not responding. Check installation."
-        API-->>FM: Show Error "Device Pairing Failed"
+    Auth->>App: Return eKYC data (name, photo)
+    App->>App: Render live selfie capture UI
+    Customer->>App: Face visible in camera
+    App->>App: Run Google ML Kit face liveness check (on-device)
+    App->>App: Compare selfie vs. Aadhaar photo (on-device)
+
+    alt Face match > 80% confidence
+        App->>Consent: POST /consent/grant {VID, type: AADHAAR_EKYC, purpose}
+        App->>App: Record voice consent (15s WAV)
+        Consent->>DB: INSERT consent_records (append-only)
+        App->>GW: POST /customers {VID, dialect, mitraId}
+        GW->>DB: INSERT customers
+        DB-->>App: Customer created ✅
+    else Face match < 80%
+        App->>Mitra: "Face not matched. Retry or escalate to supervisor."
+        Mitra->>App: Escalate → Level 4 manual KYC flag
     end
 ```
 
 ---
 
-## Predictive Maintenance Alert Flow
+## 2. GenAI Voice Credit Interview
 
-**Requirement**: FR-05 (AI-Powered Predictive Maintenance)
-**Use Case**: UC-5 (Predict Maintenance Needs)
+**Mapped to**: UC5 | **Requirement**: REQ-3, REQ-6
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Device as Telematics Device
-    participant Ingest as Telematics Ingestion Service
-    participant Kafka as Kafka (Event Bus)
-    participant PM as Predictive Maintenance Service
-    participant ML as ML Model (Inference)
-    participant DB as Database
-    participant Alert as Alert & Notification Service
-    participant MS as Maintenance Staff (Mobile)
-    participant FM as Fleet Manager (Dashboard)
+    actor Customer
+    actor Mitra
+    participant App as Mitra App (Android)
+    participant ONNX as On-Device ONNX Models
+    participant ASR_C as Cloud ASR (IndicASR)
+    participant Agent as LangChain Agent (Cloud)
+    participant Sarvam as Sarvam AI Saaras (LLM)
+    participant NLP as Slot-Filling Engine
 
-    loop Every 5 seconds
-        Device->>Ingest: MQTT: telemetry {oilPressure: 22psi, tireFL: 28psi, batteryV: 11.8V, engineTemp: 105°C}
-    end
+    App->>App: Check network availability
+    App->>ONNX: Run FastText dialect detection (first utterance)
+    ONNX-->>App: Dialect = "bhojpuri" (confidence 0.91)
 
-    Ingest->>Kafka: Publish "TelemetryReceived" event
-    Kafka->>PM: Consume "TelemetryReceived"
+    Note over App,Sarvam: Session begins. 8-12 questions planned.
 
-    PM->>ML: predict(vehicleId, telemetryWindow=30days)
-    ML-->>PM: {brakeWear: 0.82, batteryFailure: 0.71, engineOverheat: 0.45}
+    loop For each interview question
+        App->>ONNX: Generate question audio (IndicTTS ONNX)
+        ONNX-->>App: Audio WAV
+        App->>Customer: Play question audio via speaker
+        Customer->>App: Speaks answer
+        App->>App: Record audio (16kHz WAV)
 
-    alt Risk Score > Threshold (0.75)
-        PM->>DB: UPDATE component_risk_scores SET score=0.82 WHERE component='BRAKES'
-        PM->>DB: INSERT INTO maintenance_work_orders (vehicleId, component, urgency, action)
-
-        PM->>Kafka: Publish "MaintenanceWorkOrderCreated" {vehicleId: V-001, component: BRAKES, score: 0.82}
-        Kafka->>Alert: Consume "MaintenanceWorkOrderCreated"
-
-        par Notify Maintenance Staff
-            Alert->>MS: Push "🔧 Vehicle V-001: Brake pads at 82% risk — Schedule replacement within 7 days"
-        and Notify Fleet Manager
-            Alert->>FM: Dashboard Alert "Maintenance Required: V-001 Brakes (High Priority)"
+        alt Online
+            App->>ASR_C: POST /asr/transcribe {audio, dialect: bhojpuri}
+            ASR_C-->>App: Transcription + confidence
+            App->>Agent: POST /interview/next {transcription, sessionId}
+            Agent->>Sarvam: Generate follow-up question
+            Sarvam-->>Agent: Next question JSON
+            Agent->>NLP: Extract slots from transcript
+            NLP-->>Agent: Extracted fields {field, value, confidence}
+            Agent-->>App: {nextQuestion, extractedFields}
+        else Offline
+            App->>ONNX: Transcribe audio (IndicASR ONNX INT4)
+            ONNX-->>App: Transcription (lower quality)
+            App->>ONNX: Run Phi-2 to generate next question
+            ONNX-->>App: Next question + basic slot extraction
         end
-    else Risk Score < Threshold
-        PM->>DB: UPDATE component_risk_scores SET score=0.45
-        Note over PM: No action needed — continue monitoring
+
+        App->>App: Store turn in local SQLite
     end
+
+    App->>Mitra: Show extracted fields (income, assets, expenses...)
+    Mitra->>App: Reviews and corrects low-confidence fields
+    App->>App: Finalize interview → trigger credit scoring (UC6)
 ```
 
 ---
 
-## Route Optimization & Dynamic Reroute
+## 3. Loan Application with Alt Credit Scoring
 
-**Requirement**: FR-06 (Route Optimization)
-**Use Case**: UC-6 (Optimize Route)
+**Mapped to**: UC3, UC6 | **Requirement**: REQ-1, REQ-4
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant FM as Fleet Manager (UI)
-    participant API as API Gateway
-    participant RouteSvc as Route Optimization Service
-    participant Traffic as Traffic API (External)
-    participant Weather as Weather API (External)
-    participant DB as Database
-    participant Driver as Driver (Mobile App)
-    participant Kafka as Kafka (Event Bus)
-    participant Alert as Alert Service
+    actor Mitra
+    participant App as Mitra App
+    participant GW as API Gateway
+    participant Loan as Loan Origination Service
+    participant Score as Credit Scoring Engine
+    participant MGNA as MGNREGA API
+    participant Agri as AgriData / IMD API
+    participant Workflow as Loan Workflow Engine
+    participant DB as PostgreSQL
 
-    FM->>API: POST /routes/optimize {vehicleId, stops: [A, B, C, D], constraints}
-    API->>RouteSvc: optimizeRoute(request)
+    Mitra->>App: Starts loan application (customer already KYC'd)
+    App->>App: Load KYC data from local SQLite
+    App->>App: Trigger GenAI interview (see Diagram 2)
+    App-->>App: Interview complete; structured output ready
 
-    par Fetch External Data
-        RouteSvc->>Traffic: GET /traffic?region=stops_area
-        Traffic-->>RouteSvc: {congestionData, incidents}
-    and
-        RouteSvc->>Weather: GET /forecast?locations=stops
-        Weather-->>RouteSvc: {temperature, precipitation, visibility}
+    App->>GW: POST /loans {customerId, loanType, amount, tenure, interviewId}
+    GW->>Loan: Forward
+    Loan->>DB: INSERT loan_applications (status=SUBMITTED)
+    Loan->>Score: scoreLoan(customerId, interviewId)
+
+    par Fetch Alt Data Signals (if online)
+        Score->>MGNA: GET /mgnrega/workdays {customerId, aadhaarVID}
+        MGNA-->>Score: 145 days/year registered
+        Score->>Agri: GET /agrizone/drought-index {district, lat, lng}
+        Agri-->>Score: Drought risk: LOW (0.12), past 24 months
     end
 
-    RouteSvc->>RouteSvc: runOptimization(stops, traffic, weather, vehicleCapacity)
-    Note over RouteSvc: Constraint solver: minimize(fuel + time)<br/>subject to delivery windows
+    Score->>Score: Assemble feature vector
+    Score->>Score: Run LightGBM Ensemble inference
+    Score->>Score: Calculate SHAP values (top-3 factors)
+    Score->>DB: INSERT credit_scores {score: 672, band: MEDIUM, modelVersion: lgbm-v2.1}
+    Score-->>Loan: CreditScore {id, score: 672, band: MEDIUM, recAmount: ₹35,000}
 
-    RouteSvc->>DB: INSERT INTO routes (vehicleId, optimizedStops, totalDistance, estFuel, ETAs)
-    RouteSvc-->>API: 200 OK {route: A→C→B→D, totalKm: 142, estFuel: 18L, ETAs: [...]}
-    API-->>FM: Display Optimized Route on Map
-
-    FM->>API: POST /routes/{id}/dispatch {driverId}
-    API->>Driver: Push "New Route Assigned: A→C→B→D"
-    Driver-->>API: ACK "Route Accepted"
-
-    Note over Driver: Trip in progress...
-
-    Traffic->>RouteSvc: Webhook: "Major accident on segment C→B"
-    RouteSvc->>RouteSvc: recalculateSegment(C→B, newTrafficData)
-    RouteSvc->>DB: UPDATE routes SET rerouted_segment = C→E→B
-
-    RouteSvc->>Kafka: Publish "RouteRerouteRequired" {routeId, newSegment}
-    Kafka->>Alert: Consume "RouteRerouteRequired"
-    Alert->>Driver: Push "⚠️ Route Updated: Take Highway E to avoid accident"
-    Alert->>FM: Dashboard Update "Route R-001 rerouted — ETA updated"
+    Loan->>Workflow: routeLoan(loanId, score: 672, amount: ₹35,000)
+    Workflow->>Workflow: Evaluate routing rules
+    Note over Workflow: MEDIUM band + ₹35K → L1 Credit Officer
+    Workflow->>DB: UPDATE loan_applications (status=UNDER_REVIEW, assignedOfficer)
+    Workflow->>Loan: Routed to L1 Review
+    Loan-->>GW: LoanApplication (status=UNDER_REVIEW, scoreId)
+    GW-->>App: 201 Created — Loan submitted, under review
+    App->>Mitra: "Loan submitted. Credit Officer review: up to 4 hours."
 ```
 
 ---
 
-## Driver Behavior Monitoring & Scoring
+## 4. Offline Loan Origination & Background Sync
 
-**Requirement**: FR-07 (Driver Behavior Monitoring)
-**Use Case**: UC-7 (Monitor Driver Behavior)
+**Mapped to**: UC7 | **Requirement**: REQ-5
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Device as Telematics Device
-    participant Ingest as Telematics Ingestion Service
-    participant Kafka as Kafka (Event Bus)
-    participant DBA as Driver Behavior Analytics Service
-    participant DB as Database
-    participant Alert as Alert & Notification Service
-    participant Driver as Driver (Mobile)
-    participant FM as Fleet Manager (Dashboard)
+    actor Mitra
+    participant App as Mitra App (Offline)
+    participant SQLite as Local SQLite (SQLCipher)
+    participant WorkMgr as Android WorkManager
+    participant SyncAPI as Sync API (/v1/sync/batch)
+    participant Dedup as Idempotency Store (Redis)
+    participant DB as PostgreSQL
 
-    loop Every 1 second (during trip)
-        Device->>Ingest: MQTT: {speed: 92kmh, accelX: -0.8g, accelY: 0.3g, rpm: 3200, heading: 245}
+    Note over Mitra,App: No network available
+
+    Mitra->>App: Completes loan application form
+    App->>App: Run on-device credit scoring (ONNX XGBoost)
+    App->>SQLite: INSERT loan_applications (status=QUEUED, syncStatus=PENDING)
+    App->>SQLite: INSERT pending_operations {idempKey, type=CREATE, entity=LoanApplication, priority=2}
+    App->>Mitra: "Application saved offline. Will sync when connected."
+
+    Note over WorkMgr: Monitoring network state via ConnectivityManager
+
+    WorkMgr->>WorkMgr: Network detected (3G signal)
+    WorkMgr->>SQLite: SELECT * FROM pending_operations ORDER BY priority, created_at LIMIT 50
+    SQLite-->>WorkMgr: 50 pending items
+
+    loop For each pending item (batched)
+        WorkMgr->>SyncAPI: POST /v1/sync/batch (protobuf payload, idempotency keys)
+        SyncAPI->>Dedup: Check isDuplicate(idempotencyKey)
+        Dedup-->>SyncAPI: Not duplicate → proceed
+        SyncAPI->>DB: INSERT / UPDATE entity
+        DB-->>SyncAPI: Success
+        SyncAPI->>Dedup: Mark processed(idempotencyKey)
+        SyncAPI-->>WorkMgr: {itemId, status: SYNCED}
+        WorkMgr->>SQLite: UPDATE pending_operations SET status=SYNCED
+        WorkMgr->>SQLite: UPDATE local_loan_applications SET syncStatus=SYNCED
     end
 
-    Ingest->>Kafka: Publish "TelemetryReceived"
-    Kafka->>DBA: Consume telemetry stream
+    WorkMgr->>App: Broadcast "Sync complete: 3 items uploaded"
+    App->>Mitra: Notification: "✅ 3 applications synced successfully"
 
-    DBA->>DBA: analyzeWindow(last 5 seconds)
-    Note over DBA: Detected: Harsh Braking (decel > 0.7g for > 1s)
+    Note over SyncAPI,DB: Server runs full credit scoring with external signals post-sync
+```
 
-    DBA->>DB: INSERT INTO driving_events {driverId, type: HARSH_BRAKE, severity: HIGH, location, timestamp}
-    DBA->>Kafka: Publish "DrivingEventDetected" {driverId, type: HARSH_BRAKE, severity: HIGH}
+---
 
-    Kafka->>Alert: Consume "DrivingEventDetected"
+## 5. Loan Approval Routing Workflow
 
-    alt Severity = HIGH or CRITICAL
-        Alert->>Driver: In-Cab Alert 🔴 "Harsh Braking Detected — Drive Safely"
+**Mapped to**: UC8 | **Requirement**: REQ-7
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Workflow as Loan Workflow Engine
+    participant DB as PostgreSQL
+    participant KF as Kafka
+    participant Notify as Notification Service
+    actor CO as Credit Officer (L1)
+    actor RM as Regional Manager (L2)
+    actor Mitra
+    actor Customer
+
+    Workflow->>Workflow: Receive LoanSubmitted event from Kafka
+    Workflow->>DB: Fetch loan + credit score
+
+    alt Risk=LOW, Amount < ₹25,000
+        Workflow->>DB: UPDATE status=AUTO_APPROVED, approvedAmount=requestedAmount
+        Workflow->>KF: Publish LoanAutoApproved event
+        Note over Workflow: Auto-approval in < 30 seconds
+    else Risk=MEDIUM or Amount ₹25K–₹2L
+        Workflow->>DB: UPDATE status=UNDER_REVIEW, assignedOfficer=CO
+        Workflow->>Notify: Send alert to Credit Officer (push + dashboard)
+        CO->>DB: Opens review queue (web dashboard)
+        CO->>DB: Reviews loan + AI score + SHAP explanation
+
+        alt CO approves within 4h SLA
+            CO->>Workflow: POST /loans/{id}/decision {action: APPROVE, reason}
+            Workflow->>DB: UPDATE status=APPROVED
+            Workflow->>KF: Publish LoanApproved event
+        else CO requests more info
+            CO->>Workflow: POST /loans/{id}/decision {action: MORE_INFO}
+            Workflow->>Notify: Alert Mitra to upload additional docs
+            Mitra->>Workflow: Uploads docs
+            Workflow->>DB: UPDATE status=UNDER_REVIEW (reset to CO queue)
+        else SLA breached (4h)
+            Workflow->>Workflow: SLA timer triggers escalation
+            Workflow->>DB: UPDATE status=UNDER_REVIEW, assignedOfficer=RM
+            Workflow->>Notify: Alert Regional Manager (push + SMS)
+        end
+    else Risk=HIGH or Amount > ₹2L
+        Workflow->>DB: UPDATE status=UNDER_REVIEW, assignedOfficer=RM
+        RM->>Workflow: POST /loans/{id}/decision {action: APPROVE or REJECT}
+        Workflow->>DB: UPDATE status accordingly
     end
 
-    Note over DBA: Trip Ends...
+    Workflow->>KF: Publish LoanDecisionFinal event
+    KF->>Notify: Consume event
+    Notify->>Mitra: Push/SMS: "Loan {id} APPROVED — ₹35,000"
+    Notify->>Customer: WhatsApp voice: "आपका ₹35,000 का लोन मंजूर हो गया"
 
-    DBA->>DBA: calculateTripScore(allEventsInTrip)
-    Note over DBA: Score Formula:<br/>100 - (harshBrake*5 + speeding*3 + accel*2 + idle*1)
+    Note over Workflow: Disbursement flow triggers IMPS credit to Jan Dhan account
+```
 
-    DBA->>DB: INSERT INTO trip_summaries {driverId, tripId, score: 72, events: 4}
-    DBA->>DB: UPDATE driver_scores SET rolling_avg = recalculate(last30Trips)
+---
 
-    DBA->>Kafka: Publish "DriverScoreUpdated" {driverId, tripScore: 72, rollingAvg: 81}
-    Kafka->>Alert: Consume "DriverScoreUpdated"
+## 6. DPDP Consent Revocation
 
-    Alert->>Driver: Push "Trip Complete — Score: 72/100. 1 Harsh Brake event. Review details in app."
-    Alert->>FM: Dashboard update "Driver D-007 trip score: 72 (below avg of 81)"
+**Mapped to**: UC9 | **Requirement**: REQ-8
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Customer
+    actor Mitra
+    participant App as Mitra App
+    participant GW as API Gateway
+    participant Consent as Consent Service
+    participant KF as Kafka
+    participant Score as Credit Scoring Engine
+    participant DB as PostgreSQL
+    participant S3 as AWS S3
+
+    Customer->>Mitra: "I want to stop sharing my electricity bill data"
+    Mitra->>App: Opens "Manage Consent" → Customer profile
+
+    App->>GW: GET /consent/{customerId} 
+    GW->>Consent: Fetch all active consents
+    Consent->>DB: SELECT consent_records WHERE customer_id AND status=GRANTED
+    DB-->>App: [{type: UTILITY_DATA, grantedAt: ..., expiresAt: ...}]
+
+    App->>App: Render consent list in customer's dialect (IndicTTS)
+    Customer->>Mitra: Points to "Electricity Bill" consent
+    Mitra->>App: Taps "Revoke"
+    App->>App: TTS: "Do you want to stop Mitra Finance from using your electricity bill? Say YES"
+    Customer->>App: "हाँ" (voice recorded)
+    App->>App: Save 15s WAV to encrypted local storage
+
+    App->>GW: PUT /consent/{consentId}/revoke {voiceConsentKey}
+    GW->>Consent: revokeConsent(consentId, voiceKey)
+    Consent->>DB: INSERT consent_records {type: UTILITY_DATA, status: REVOKED, revokedAt: NOW()}
+    Note over DB: Append-only: old GRANTED record unchanged; new REVOKED row inserted
+    Consent->>S3: Upload voice consent WAV (AES-256, ap-south-1)
+    Consent->>KF: Publish ConsentRevoked {customerId, type: UTILITY_DATA}
+    
+    KF->>Score: Consume ConsentRevoked event
+    Score->>Score: Remove UTILITY_DATA signal from active feature pipeline for this customer
+    Score-->>KF: Acknowledged
+
+    Consent->>DB: INSERT audit_logs {actor: MITRA, action: CONSENT_REVOKED, ...}
+    Consent-->>App: 200 OK — Consent revoked
+    App->>Mitra: "Consent revoked. Electricity bill data will no longer be used."
+    App->>Customer: TTS: "आपकी अनुमति रद्द कर दी गई है।"
+
+    Note over Consent: Full revocation processed in < 72 hours per DPDP Act
 ```
 
 ---
 
 **Last Updated**: February 2026
 **Version**: 1.0
+**Status**: Design Complete

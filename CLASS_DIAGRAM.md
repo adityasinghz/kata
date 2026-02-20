@@ -1,452 +1,389 @@
-# Class Diagram — AI-Driven Fleet Management Optimization Platform
+# Mitra Finance — Class Diagram
 
-> **⚠️ Core Requirements**: Classes are designed around the functional requirements in [FUNCTIONAL_REQUIREMENTS.md](./FUNCTIONAL_REQUIREMENTS.md) and the microservices in [MICROSERVICES.md](./MICROSERVICES.md).
+> **⚠️ Core Requirements**: Classes are organized by bounded context and map to [ARCHITECTURE.md](./ARCHITECTURE.md) service boundaries.
 
 ## Table of Contents
-1. [Overview](#overview)
-2. [Domain Layer Classes](#domain-layer-classes)
-3. [Service Layer Classes](#service-layer-classes)
-4. [Infrastructure Layer Classes](#infrastructure-layer-classes)
-5. [Complete Class Diagram](#complete-class-diagram)
-6. [Class Relationships](#class-relationships)
+1. [Domain Layer — Core Entities](#domain-layer--core-entities)
+2. [AI & Scoring Domain](#ai--scoring-domain)
+3. [Offline & Sync Domain](#offline--sync-domain)
+4. [Service Layer](#service-layer)
+5. [Infrastructure / Adapter Layer](#infrastructure--adapter-layer)
 
 ---
 
-## Overview
-
-The Fleet Management platform follows an **Event-Driven Microservices Architecture**:
-
-- **Domain Layer**: Core business entities (Vehicle, Driver, Route, MaintenanceOrder).
-- **Service Layer**: Business logic (Predictive Maintenance, Route Optimization, Driver Analytics).
-- **Infrastructure Layer**: IoT ingestion, external integrations, and data persistence.
-
----
-
-## Domain Layer Classes
-
-### Fleet Asset Domain
+## Domain Layer — Core Entities
 
 ```mermaid
 classDiagram
-    class Vehicle {
-        +UUID id
-        +String vin
-        +String make
-        +String model
-        +Integer year
-        +String licensePlate
-        +FuelType fuelType
-        +VehicleStatus status
-        +UUID telematicsDeviceId
-        +Double currentOdometerKm
-        +DateTime registeredAt
-        +getHealthScore() Integer
-        +activate() void
-        +decommission(reason) void
-    }
-
-    class TelematicsDevice {
-        +UUID id
-        +String serialNumber
-        +String firmwareVersion
-        +DeviceStatus status
-        +UUID vehicleId
-        +DateTime lastHeartbeat
-        +pair(vehicleId) void
-        +unpair() void
-    }
-
-    class ComplianceDocument {
-        +UUID id
-        +UUID entityId
-        +EntityType entityType
-        +DocumentType type
-        +String fileUrl
-        +DateTime expiresAt
-        +Boolean isVerified
-        +isExpired() Boolean
-    }
-
-    class GeoFence {
-        +UUID id
-        +String name
-        +GeoFenceType type
-        +Polygon boundary
-        +Boolean isActive
-        +containsPoint(lat, lng) Boolean
-    }
-
-    Vehicle "1" *-- "1" TelematicsDevice
-    Vehicle "1" *-- "many" ComplianceDocument
-```
-
-### Driver & Workforce Domain
-
-```mermaid
-classDiagram
-    class Driver {
-        +UUID id
+    class Mitra {
+        +String id
         +String fullName
-        +String licenseNumber
-        +DateTime licenseExpiry
         +String phoneNumber
-        +DriverStatus status
-        +Double safetyScore
-        +DateTime onboardedAt
-        +isLicenseValid() Boolean
-        +updateSafetyScore(score) void
+        +String deviceSerialNumber
+        +String deviceCertificateId
+        +String assignedRegion
+        +MitraStatus status
+        +LocalDate onboardedDate
+        +String supervisorId
+        +int dailyApplicationCount
+        +float approvalRate
+        +register() void
+        +suspend() void
+        +getPerformanceReport() MitraReport
     }
 
-    class DriverVehicleAssignment {
-        +UUID id
-        +UUID driverId
-        +UUID vehicleId
-        +DateTime startDate
-        +DateTime endDate
-        +AssignmentStatus status
-        +isActive() Boolean
+    class Customer {
+        +String id
+        +String virtualId
+        +String maskedAadhaarNumber
+        +String phoneNumber
+        +String dialect
+        +KYCStatus kycStatus
+        +LocalDate kycVerifiedDate
+        +LocalDate kycExpiryDate
+        +String mitraId
+        +boolean abhaLinked
+        +getActiveLoans() List~LoanApplication~
+        +revokeConsent(ConsentType) void
     }
 
-    class DrivingEvent {
-        +UUID id
-        +UUID driverId
-        +UUID tripId
-        +EventType type
-        +Severity severity
-        +Double latitude
-        +Double longitude
-        +DateTime timestamp
-        +JSON metadata
+    class LoanApplication {
+        +String id
+        +String customerId
+        +String mitraId
+        +LoanType loanType
+        +BigDecimal requestedAmount
+        +int requestedTenureMonths
+        +LoanStatus status
+        +String creditScoreId
+        +LocalDateTime submittedAt
+        +LocalDateTime lastUpdatedAt
+        +String assignedOfficerId
+        +String rejectionReasonCode
+        +List~LoanDocument~ documents
+        +submit() void
+        +route() void
+        +approve(String reason) void
+        +reject(String reason) void
     }
 
-    class TripSummary {
-        +UUID id
-        +UUID driverId
-        +UUID vehicleId
-        +UUID routeId
-        +DateTime startTime
-        +DateTime endTime
-        +Double distanceKm
-        +Double fuelConsumedL
-        +Integer safetyScore
-        +Integer eventCount
+    class LoanDocument {
+        +String id
+        +String loanApplicationId
+        +DocumentType documentType
+        +String s3Key
+        +String ocrExtractedDataJson
+        +float ocrConfidence
+        +boolean humanVerified
+        +LocalDateTime uploadedAt
+        +String uploadedByMitraId
     }
 
-    Driver "1" -- "many" DriverVehicleAssignment
-    Driver "1" -- "many" DrivingEvent
-    Driver "1" -- "many" TripSummary
-    Driver "1" *-- "many" ComplianceDocument
+    class ConsentRecord {
+        +String id
+        +String customerId
+        +ConsentType consentType
+        +ConsentPurpose purpose
+        +LocalDateTime grantedAt
+        +LocalDateTime expiresAt
+        +ConsentStatus status
+        +String voiceConsentS3Key
+        +String mitraId
+        +grant() void
+        +revoke() void
+        +isActive() boolean
+    }
+
+    class LoanRepayment {
+        +String id
+        +String loanId
+        +int emiNumber
+        +BigDecimal amount
+        +LocalDate dueDate
+        +LocalDate paidDate
+        +RepaymentStatus status
+        +String transactionReference
+        +record() void
+        +isOverdue() boolean
+    }
+
+    LoanApplication "1" --> "many" LoanDocument : contains
+    LoanApplication "1" --> "1" Customer : for
+    LoanApplication "1" --> "1" Mitra : submitted by
+    LoanApplication "1" --> "many" LoanRepayment : has
+    Customer "1" --> "many" ConsentRecord : has
+    Mitra "many" --> "many" Customer : serves
+
+    note for ConsentRecord "Append-only. No UPDATE or DELETE.\nDPDP Act 2023 compliance."
+    note for Customer "Aadhaar VID stored, not raw number.\nZero-PII by design."
 ```
 
-### Maintenance Domain
+---
+
+## AI & Scoring Domain
 
 ```mermaid
 classDiagram
-    class MaintenanceWorkOrder {
-        +UUID id
-        +UUID vehicleId
-        +String component
-        +WorkOrderStatus status
-        +Urgency urgency
-        +String recommendedAction
-        +Double riskScore
-        +UUID assignedTo
-        +DateTime createdAt
-        +DateTime completedAt
-        +assign(staffId) void
-        +complete(notes, partsReplaced) void
-        +cancel(reason) void
-    }
-
-    class ComponentRiskScore {
-        +UUID id
-        +UUID vehicleId
-        +String componentName
-        +Double score
-        +DateTime calculatedAt
+    class CreditInterview {
+        +String id
+        +String loanApplicationId
+        +String dialect
+        +InterviewStatus status
+        +List~InterviewTurn~ turns
+        +Map~String, ExtractedField~ structuredOutput
+        +float overallConfidence
         +String modelVersion
-        +isAboveThreshold(threshold) Boolean
+        +LocalDateTime conductedAt
+        +start() void
+        +addTurn(InterviewTurn) void
+        +finalize() CreditInterviewSummary
     }
 
-    class MaintenanceLog {
-        +UUID id
-        +UUID workOrderId
-        +UUID vehicleId
-        +String actionTaken
-        +List~String~ partsReplaced
-        +Double costAmount
-        +UUID performedBy
-        +DateTime performedAt
+    class InterviewTurn {
+        +String id
+        +String interviewId
+        +int sequenceNumber
+        +String questionText
+        +String questionAudioS3Key
+        +String responseTranscription
+        +String responseAudioS3Key
+        +float asrConfidence
+        +Map~String, ExtractedField~ extractedFields
     }
 
-    MaintenanceWorkOrder "1" -- "1" MaintenanceLog
-    Vehicle "1" -- "many" MaintenanceWorkOrder
-    Vehicle "1" -- "many" ComponentRiskScore
+    class ExtractedField {
+        +String fieldName
+        +String rawValue
+        +Object parsedValue
+        +float confidence
+        +boolean humanVerified
+        +String correctedValue
+    }
+
+    class CreditScore {
+        +String id
+        +String customerId
+        +String loanApplicationId
+        +int score
+        +RiskBand riskBand
+        +BigDecimal recommendedMaxAmount
+        +int recommendedTenureMonths
+        +List~ScoreFactor~ topFactors
+        +String modelVersion
+        +String modelId
+        +LocalDateTime calculatedAt
+        +boolean isOfflineScore
+        +getRiskBand() RiskBand
+        +toExplainabilityReport() ExplainReport
+    }
+
+    class ScoreFactor {
+        +String factorName
+        +float shapValue
+        +String humanReadableExplanation
+        +String direction
+    }
+
+    class AltDataSignal {
+        +String customerId
+        +SignalType signalType
+        +String rawValue
+        +float normalizedValue
+        +String source
+        +LocalDate fetchedDate
+        +boolean isConsentGranted
+    }
+
+    CreditInterview "1" --> "many" InterviewTurn : contains
+    InterviewTurn "1" --> "many" ExtractedField : produces
+    CreditScore "1" --> "many" ScoreFactor : explained by
+    CreditScore "1" --> "1" CreditInterview : derived from
+    AltDataSignal "many" --> "1" CreditScore : feeds into
+
+    note for CreditScore "isOfflineScore=true when only interview signals used.\nmodelVersion enables reproducibility audit."
 ```
 
-### Route & Logistics Domain
+---
+
+## Offline & Sync Domain
 
 ```mermaid
 classDiagram
-    class Route {
-        +UUID id
-        +UUID vehicleId
-        +RouteStatus status
-        +Double totalDistanceKm
-        +Double estimatedFuelL
-        +DateTime createdAt
-        +List~RouteWaypoint~ waypoints
-        +getETA() DateTime
-        +reroute(newSegment) void
-    }
-
-    class RouteWaypoint {
-        +UUID id
-        +UUID routeId
-        +Integer sequenceOrder
-        +String locationName
-        +Double latitude
-        +Double longitude
-        +DateTime estimatedArrival
-        +DateTime actualArrival
-        +WaypointStatus status
-    }
-
-    class DeliverySchedule {
-        +UUID id
-        +UUID routeId
-        +String customerName
-        +String pickupAddress
-        +String dropoffAddress
-        +DateTime windowStart
-        +DateTime windowEnd
-    }
-
-    Route "1" *-- "many" RouteWaypoint
-    Route "1" -- "many" DeliverySchedule
-```
-
-### User & Access Control Domain
-
-```mermaid
-classDiagram
-    class User {
-        +UUID id
-        +String email
-        +String fullName
-        +Role role
-        +Boolean isActive
-        +DateTime createdAt
-        +hasPermission(action) Boolean
-        +deactivate() void
-    }
-
-    class AlertRule {
-        +UUID id
-        +String name
-        +AlertType type
-        +String condition
-        +Severity severity
-        +UUID createdBy
-        +Boolean isActive
-        +evaluate(event) Boolean
-    }
-
-    class AlertInstance {
-        +UUID id
-        +UUID ruleId
-        +UUID targetUserId
-        +String message
-        +AlertStatus status
-        +DateTime createdAt
-        +DateTime acknowledgedAt
-        +acknowledge() void
-    }
-
-    class AuditLog {
-        +UUID id
-        +UUID entityId
+    class SyncQueueItem {
+        +String clientId
+        +String operationType
         +String entityType
-        +String action
-        +UUID performedBy
-        +DateTime timestamp
-        +JSON changes
-        +String reason
+        +String entityId
+        +String payloadJson
+        +SyncStatus status
+        +int retryCount
+        +LocalDateTime createdAt
+        +LocalDateTime lastAttemptAt
+        +String errorMessage
+        +int priority
+        +markSynced() void
+        +markFailed(String error) void
+        +shouldRetry() boolean
     }
 
-    User "1" -- "many" AlertInstance
-    User "1" -- "many" AuditLog : generates >
-    AlertRule "1" -- "many" AlertInstance
+    class SyncSession {
+        +String id
+        +String mitraId
+        +String deviceId
+        +LocalDateTime startedAt
+        +LocalDateTime completedAt
+        +int itemsSynced
+        +int itemsFailed
+        +int conflictsResolved
+        +SyncStrategy conflictStrategy
+        +generateReport() SyncReport
+    }
+
+    class ConflictRecord {
+        +String id
+        +String syncSessionId
+        +String entityType
+        +String entityId
+        +String localVersion
+        +String serverVersion
+        +ConflictResolution resolution
+        +String resolvedVersion
+        +LocalDateTime resolvedAt
+    }
+
+    class OfflineBiometricToken {
+        +String customerId
+        +String tokenHash
+        +LocalDateTime issuedAt
+        +LocalDateTime expiresAt
+        +String mitraId
+        +boolean isRevoked
+        +isValid() boolean
+        +revoke() void
+    }
+
+    SyncSession "1" --> "many" SyncQueueItem : processes
+    SyncSession "1" --> "many" ConflictRecord : records
+    
+    note for SyncQueueItem "priority: KYC=1, Loan=2, Documents=3\nEnsures critical data synced first."
+    note for OfflineBiometricToken "8-hour expiry window.\nAllows repeat customer visits in same field session."
 ```
 
 ---
 
-## Service Layer Classes
-
-### Core Business Services
+## Service Layer
 
 ```mermaid
 classDiagram
-    class VehicleManagementService {
-        -VehicleRepository vehicleRepo
-        -DeviceRegistry deviceRegistry
-        -EventPublisher eventBus
-        +createVehicle(dto) Vehicle
-        +pairDevice(vehicleId, serial) void
-        +getVehicle(id) Vehicle
-        +updateStatus(vehicleId, status) void
-        +decommission(vehicleId, reason) void
+    class LoanOriginationService {
+        -LoanRepository loanRepo
+        -ConsentService consentService
+        -OCRService ocrService
+        -CreditScoringEngine scoringEngine
+        +createDraft(CreateLoanRequest) LoanApplication
+        +addDocument(String loanId, MultipartFile) LoanDocument
+        +submit(String loanId) LoanApplication
+        +getStatus(String loanId) LoanStatus
     }
 
-    class DriverManagementService {
-        -DriverRepository driverRepo
-        -AssignmentRepository assignmentRepo
-        +onboardDriver(dto) Driver
-        +assignToVehicle(driverId, vehicleId, schedule) Assignment
-        +getDriverProfile(id) Driver
-        +checkComplianceStatus(driverId) ComplianceResult
-    }
-
-    class PredictiveMaintenanceService {
+    class CreditScoringEngine {
         -MLModelRegistry modelRegistry
-        -RiskScoreRepository riskRepo
-        -WorkOrderRepository workOrderRepo
-        -EventPublisher eventBus
-        +analyzeTelemetry(vehicleId, data) RiskAssessment
-        +generateWorkOrder(vehicleId, component) WorkOrder
-        +getVehicleHealthReport(vehicleId) HealthReport
+        -AltDataAggregator altDataAggregator
+        -CreditScoreRepository scoreRepo
+        +scoreOnline(String customerId, CreditInterview) CreditScore
+        +scoreOffline(CreditInterview) CreditScore
+        +getExplainability(String scoreId) ExplainReport
+        +retrainScheduled() void
     }
 
-    class RouteOptimizationService {
-        -TrafficClient trafficApi
-        -WeatherClient weatherApi
-        -ConstraintSolver solver
-        +optimizeRoute(request) OptimizedRoute
-        +reroute(routeId, newConditions) Route
-        +getRouteETA(routeId) ETAResult
+    class SyncService {
+        -SyncQueueRepository queueRepo
+        -IdempotencyStore idempotencyStore
+        -ConflictResolver conflictResolver
+        +processBatch(List~SyncQueueItem~) SyncResult
+        +resolveConflict(ConflictRecord) ResolvedEntity
+        +getQueueDepth(String mitraId) int
     }
 
-    class DriverBehaviorService {
-        -EventDetector detector
-        -ScoringEngine scorer
-        -EventRepository eventRepo
-        +analyzeTelemetryStream(data) List~DrivingEvent~
-        +calculateTripScore(tripId) Integer
-        +getDriverScoreHistory(driverId) ScoreHistory
+    class ConsentService {
+        -ConsentRepository consentRepo
+        -AuditLogger auditLogger
+        -EventPublisher eventPublisher
+        +grantConsent(GrantConsentRequest) ConsentRecord
+        +revokeConsent(String consentId) void
+        +checkConsent(String customerId, ConsentType) boolean
+        +processErasureRequest(String customerId) ErasureStatus
     }
 
-    class AlertNotificationService {
-        -PushProvider pushClient
-        -SMSProvider smsClient
-        -EmailProvider emailClient
-        -EscalationEngine escalation
-        +evaluateAndSend(event) void
-        +acknowledge(alertId, userId) void
-        +configureRule(rule) AlertRule
+    class LoanWorkflowEngine {
+        -RoutingRuleConfig routingConfig
+        -SLAMonitor slaMonitor
+        -EventPublisher eventPublisher
+        +route(LoanApplication) WorkflowDecision
+        +autoApprove(String loanId) void
+        +assign(String loanId, String officerId) void
+        +escalate(String loanId) void
+        +recordDecision(String loanId, Decision) void
     }
 
-    PredictiveMaintenanceService --> AlertNotificationService
-    DriverBehaviorService --> AlertNotificationService
-    RouteOptimizationService --> AlertNotificationService
+    LoanOriginationService --> CreditScoringEngine : calls
+    LoanOriginationService --> ConsentService : checks
+    LoanOriginationService --> LoanWorkflowEngine : submits to
+    SyncService --> LoanOriginationService : replays queued ops
 ```
 
 ---
 
-## Infrastructure Layer Classes
+## Infrastructure / Adapter Layer
 
 ```mermaid
 classDiagram
-    class TelematicsGateway {
-        -MqttBroker mqtt
-        -DeviceAuthenticator auth
-        -KafkaProducer producer
-        +onTelemetryReceived(payload) void
-        +validateDevice(token) Boolean
-        +parseOBDII(rawData) DiagnosticData
+    class AadhaarAdapter {
+        <<interface>>
+        +authenticate(String aadhaarVid, String otp) KYCData
+        +verifyBiometric(String aadhaarVid, BiometricData) boolean
+        +getVirtualId(String mobileNumber) String
     }
 
-    class TrafficApiClient {
-        -HttpClient http
-        -CircuitBreaker breaker
-        -Cache cache
-        +getTrafficConditions(region) TrafficData
-        +getIncidents(bbox) List~Incident~
+    class UIDIAIAadhaarAdapter {
+        -String apiEndpoint
+        -String clientCertificate
+        -String asa_code
+        +authenticate(String aadhaarVid, String otp) KYCData
+        +verifyBiometric(String aadhaarVid, BiometricData) boolean
+        +getVirtualId(String mobileNumber) String
     }
 
-    class WeatherApiClient {
-        -HttpClient http
-        -Cache cache
-        +getForecast(location) WeatherForecast
-        +getAlerts(region) List~WeatherAlert~
+    class CreditBureauAdapter {
+        <<interface>>
+        +getScore(String panNumber) CreditBureauReport
+        +isThinFile(String panNumber) boolean
     }
 
-    class IntegrationGateway {
-        -WebhookRegistry registry
-        -DataTransformer transformer
-        +registerWebhook(config) Subscription
-        +dispatchEvent(event) void
-        +syncWithERP(data) SyncResult
+    class MLModelRegistry {
+        -Map~String, ONNXModel~ models
+        -Map~String, ModelMetadata~ metadata
+        +loadModel(String modelId) ONNXModel
+        +getLatestVersion(ModelType) String
+        +getModelAuditRecord(String modelId) ModelAuditRecord
     }
 
-    TelematicsGateway --> KafkaProducer
-    TrafficApiClient --> CircuitBreaker
+    class IdempotencyStore {
+        -RedisTemplate redisTemplate
+        +isDuplicate(String clientId) boolean
+        +markProcessed(String clientId) void
+        +getResult(String clientId) Optional~Object~
+    }
+
+    AadhaarAdapter <|.. UIDIAIAadhaarAdapter
+    CreditBureauAdapter <|.. ExperianAdapter
+    CreditBureauAdapter <|.. CRIFAdapter
+    CreditScoringEngine --> MLModelRegistry : uses
+    SyncService --> IdempotencyStore : checks
 ```
 
 ---
 
-## Complete Class Diagram
-
-```mermaid
-classDiagram
-    %% Core Domain Entities
-    class Vehicle { +UUID id, +String vin, +VehicleStatus status }
-    class Driver { +UUID id, +String fullName, +Double safetyScore }
-    class Route { +UUID id, +Double totalDistanceKm }
-    class MaintenanceWorkOrder { +UUID id, +WorkOrderStatus status }
-    class TripSummary { +UUID id, +Integer safetyScore }
-    class User { +UUID id, +Role role }
-    class TelematicsDevice { +UUID id, +String serialNumber }
-
-    %% Services
-    class VehicleMgmtSvc { +createVehicle() }
-    class DriverMgmtSvc { +onboardDriver() }
-    class PredictiveMaintSvc { +analyzeTelemetry() }
-    class RouteOptSvc { +optimizeRoute() }
-    class DriverBehaviorSvc { +calculateTripScore() }
-    class AlertSvc { +evaluateAndSend() }
-
-    %% Relationships
-    Vehicle "1" *-- "1" TelematicsDevice
-    Vehicle "1" -- "many" MaintenanceWorkOrder
-    Driver "1" -- "many" TripSummary
-    Route "1" -- "1" Vehicle
-    TripSummary "1" -- "1" Route
-    User "1" -- "many" MaintenanceWorkOrder : assigns
-
-    VehicleMgmtSvc --> Vehicle
-    DriverMgmtSvc --> Driver
-    PredictiveMaintSvc --> MaintenanceWorkOrder
-    RouteOptSvc --> Route
-    DriverBehaviorSvc --> TripSummary
-    PredictiveMaintSvc --> AlertSvc
-    DriverBehaviorSvc --> AlertSvc
-```
-
----
-
-## Class Relationships
-
-### Key Relationships
-
-| Relationship | Description | Example |
-|--------------|-------------|---------|
-| **Composition** | Strong ownership (lifecycle-dependent) | Vehicle → TelematicsDevice |
-| **Association** | Operational link | Driver → DriverVehicleAssignment → Vehicle |
-| **Dependency** | Service usage | PredictiveMaintenanceService → AlertNotificationService |
-| **Aggregation** | Grouping (independent lifecycle) | Route → RouteWaypoint |
-
-1. **Vehicle → TelematicsDevice**: One device per vehicle. Device lifecycle is tied to the vehicle.
-2. **Driver → DriverVehicleAssignment → Vehicle**: Many-to-many via assignment table. A driver can be assigned to multiple vehicles over time.
-3. **Vehicle → MaintenanceWorkOrder**: A vehicle accumulates work orders over its lifecycle.
-4. **Driver → TripSummary → Route**: Each trip is linked to a driver, a vehicle, and the route taken.
-5. **PredictiveMaintenanceService → AlertNotificationService**: Maintenance alerts are routed through the central notification service.
+**Last Updated**: February 2026
+**Version**: 1.0
+**Status**: Design Complete

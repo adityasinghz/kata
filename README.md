@@ -1,43 +1,126 @@
-# AI-Driven Fleet Management Optimization Platform — Design Kata
+# Mitra Finance — AI-Powered Rural Financial Inclusion Platform
 
-## Overview
-This design kata models an **AI-Powered Fleet Management Platform** that leverages real-time telematics, predictive analytics, and automated workflows to transform fleet operations from reactive to proactive. The platform optimizes vehicle utilization, reduces operational costs, enhances driver safety, and tracks environmental sustainability.
+> **Architecture Kata** — A comprehensive system design for a voice-first, offline-capable lending platform empowering Bank Mitras to serve India's 650M+ unbanked rural citizens.
 
-## Documentation Index
+## 🎯 Problem Statement
 
-### 1. Requirements & Business Analysis
-- **[FUNCTIONAL_REQUIREMENTS.md](./FUNCTIONAL_REQUIREMENTS.md)**: 12 Functional Requirements (User Registration, Vehicle Tracking, Predictive Maintenance, Route Optimization, etc.) + 6 Non-Functional Requirements.
-- **[ACTORS_AND_USE_CASES.md](./ACTORS_AND_USE_CASES.md)**: 7 Actors (Fleet Manager, Driver, Maintenance Staff, Admin, AI Engine, IoT, Third-Party) and 11 detailed Use Cases with Mermaid use case diagram.
+A fintech startup is building a platform to connect **Bank Mitras (BC Agents)** with **New-to-Credit rural customers** across Tier 2/3 India. The platform must support:
+- AI-assisted KYC and loan origination with **zero literacy requirements**
+- Credit scoring for customers with **no CIBIL history**
+- **100% offline functionality** in areas with no internet connectivity
+- Support for **12+ Indian dialects** via voice-first interaction
 
-### 2. Architecture & Microservices
-- **[MICROSERVICES.md](./MICROSERVICES.md)**: 12 Microservices with bounded context identification, service responsibilities, owned data, key APIs, and inter-service communication patterns (REST, Kafka, MQTT, WebSocket).
+---
 
-### 3. Technical Diagrams
-- **[SEQUENCE_DIAGRAMS.md](./SEQUENCE_DIAGRAMS.md)**: 4 Sequence Diagrams — Vehicle Onboarding, Predictive Maintenance Alert, Route Optimization & Dynamic Reroute, Driver Behavior Monitoring.
-- **[CLASS_DIAGRAM.md](./CLASS_DIAGRAM.md)**: Domain, Service, and Infrastructure layer class diagrams organized by bounded context (Fleet Asset, Driver, Maintenance, Route, Access Control).
-- **[ER_DIAGRAM.md](./ER_DIAGRAM.md)**: Full ERD with 20 table definitions (PostgreSQL + TimescaleDB), column specs, and strategic indexes.
-- **[STATE_DIAGRAM.md](./STATE_DIAGRAM.md)**: State machines for Vehicle, Maintenance Work Order, Driver, Route, and Alert lifecycles.
-- **[ACTIVITY_DIAGRAM.md](./ACTIVITY_DIAGRAM.md)**: 4 Activity workflows — Fleet Onboarding, Predictive Maintenance, Route Planning & Execution, Driver Behavior Review.
-- **[FLOWCHART.md](./FLOWCHART.md)**: 4 Decision flowcharts — Maintenance Decision Engine, Route Selection, Driver Risk Assessment, Alert Escalation.
-- **[OBJECT_DIAGRAM.md](./OBJECT_DIAGRAM.md)**: 3 Runtime object snapshots — Normal Operations, Predictive Maintenance Triggered, Route In Progress.
+## 📋 Quick Start
 
-### 4. API & Integration
-- **[API_SPECIFICATION.md](./API_SPECIFICATION.md)**: RESTful API definitions for 10 service areas with request/response JSON examples and error format.
+### What is Mitra Finance?
 
-### 5. QA & Testing
-- **[TEST_STRATEGY.md](./TEST_STRATEGY.md)**: 60+ test cases mapped to FRs, API test specs, integration test plan, performance/load profiles, security tests (OWASP Top 10), edge cases, and acceptance criteria.
+Mitra Finance enables a Bank Mitra to:
+- **Onboard rural customers** using Aadhaar OTP + biometric KYC — with 4-level fallback for edge cases
+- **Conduct a voice credit interview** in the customer's local dialect using on-device AI (IndicASR + LangChain + Sarvam AI)
+- **Generate an AI credit score** based on MGNREGA records, utility bills, and agricultural data — no CIBIL required
+- **Submit loan applications offline** — stored in encrypted SQLite, synced automatically when connectivity returns
 
-### 6. Guiding Principles
-- **[GUIDING_PRINCIPLES.md](./GUIDING_PRINCIPLES.md)**: Concrete application of SOLID, KISS, and YAGNI with fleet-specific examples, comparison tables, and design rationale.
+### Rama Devi's Journey (Example Customer)
+> Bihar farmer. No CIBIL score. No bank branch for 28km. Needs ₹15,000 for seeds.
+>
+> → Bank Mitra visits with Android tablet. Aadhaar OTP KYC. On-device AI interview in Bhojpuri. Alt credit score: 672 (MEDIUM). Submitted offline. Hours later, synced and approved. ₹15,000 in Jan Dhan account. At 14% APR.
 
-## Key Design Highlights
-- **Event-Driven Architecture:** Kafka backbone decouples telematics ingestion from AI analytics, enabling independent scaling.
-- **AI-First:** Predictive maintenance (ML risk scores), route optimization (constraint solver), and driver behavior analysis (real-time event detection).
-- **12 Microservices:** Decomposed by DDD bounded contexts with clear ownership, independent data stores, and async communication.
-- **Comprehensive Observability:** Audit logs, alert escalation chains, and immutable event streams for full traceability.
-- **Sustainability Built-In:** CO₂ emission tracking and AI-driven green recommendations as first-class features.
+### Key Metrics
+| Metric | Target |
+|--------|--------|
+| Loan origination time | < 15 minutes |
+| Offline operations | 100% core functionality |
+| Dialects supported | 12 at launch, 22 by Year 2 |
+| AI credit score AUC | > 0.75 (validation) |
+| Biometric KYC time | < 60 seconds |
+| App load on 3G | < 5 seconds |
 
-## Status
-- **Version:** 1.0
-- **Status:** Design Complete
-- **Last Updated:** February 2026
+---
+
+## 📚 Documents
+
+### Core Documents
+| Document | Description |
+|----------|-------------|
+| [KEY_REQUIREMENTS.md](./KEY_REQUIREMENTS.md) | 10 FRs + 6 NFRs + Requirements Traceability Matrix |
+| [BUSINESS_PERSPECTIVE.md](./BUSINESS_PERSPECTIVE.md) | Market analysis, TAM/SAM/SOM, revenue model, real-world analogues (Eko, FINO, KreditBee) |
+| [ACTORS_AND_USE_CASES.md](./ACTORS_AND_USE_CASES.md) | 7 actors, 11 use cases, Mermaid use-case diagram |
+| [FEATURES.md](./FEATURES.md) | 13 features with user stories, acceptance criteria, tech specs, 3-phase roadmap |
+
+### Technical Design
+| Document | Description |
+|----------|-------------|
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | High-level, offline-first, AI component diagrams + tech stack + 10 design patterns + security |
+| [CLASS_DIAGRAM.md](./CLASS_DIAGRAM.md) | Domain, AI/Scoring, Offline/Sync, Service, and Infrastructure layers |
+| [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) | Cloud PostgreSQL schema (10 tables) + On-device SQLite schema + ERD + indexes |
+| [SEQUENCE_DIAGRAMS.md](./SEQUENCE_DIAGRAMS.md) | 6 key flows: KYC, AI Interview, Loan + Alt Scoring, Offline Sync, Approval Workflow, DPDP Consent |
+| [API_SPECIFICATION.md](./API_SPECIFICATION.md) | 9 REST API sections with full JSON request/response examples |
+
+### Specialized Documents
+| Document | Description |
+|----------|-------------|
+| [SECURITY_DESIGN.md](./SECURITY_DESIGN.md) | Biometric fallback chain, DPDP Act 2023 compliance, encryption map, KYC/AML, RBAC |
+| [AGENTS_AND_AI.md](./AGENTS_AND_AI.md) | ASR pipeline, LangChain interview agent, alt credit scoring engine, model governance, bias audits |
+| [OFFLINE_SYNC_STRATEGY.md](./OFFLINE_SYNC_STRATEGY.md) | Store-and-Forward queue design, conflict resolution, sync storm handling (10K Mitras) |
+| [EDGE_CASES.md](./EDGE_CASES.md) | 23 edge cases across 8 categories — Jury Q&A shield with architecture-grounded answers |
+
+### Presentation
+| Document | Description |
+|----------|-------------|
+| [PRESENTATION_SCRIPT.md](./PRESENTATION_SCRIPT.md) | 3–4 minute read-aloud script + Q&A cheat sheet |
+
+---
+
+## 🏗️ Technology Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Mobile App** | React Native (Expo Bare) |
+| **On-Device AI** | ONNX Runtime (IndicASR, Phi-2, XGBoost, IndicTTS) |
+| **Local DB** | SQLite + SQLCipher (AES-256) |
+| **API Gateway** | Kong (mTLS + JWT) |
+| **Backend** | Go (Golang) — Core services; Node.js BFF |
+| **AI Orchestration** | LangChain + Sarvam AI Saaras (India-first LLM) |
+| **Credit Scoring** | XGBoost + LightGBM Ensemble (SHAP explainability) |
+| **Event Backbone** | Apache Kafka |
+| **Database** | PostgreSQL 15 |
+| **Cache** | Redis Cluster |
+| **Storage** | AWS S3 (ap-south-1 — India data residency) |
+| **Infrastructure** | Kubernetes (EKS) + SQS (sync storm buffer) |
+| **Sync Protocol** | Protocol Buffers (delta sync, 5× smaller than JSON) |
+| **Monitoring** | Prometheus + Grafana + OpenTelemetry + Jaeger |
+
+---
+
+## 🔐 Key Design Patterns
+
+1. **Offline-First** — SQLite is the primary state; cloud is eventual sync target
+2. **Store-and-Forward** — Priority queue with idempotent server ingestion
+3. **Saga Pattern** — Distributed loan approval → disbursement orchestration
+4. **Circuit Breaker** — Per-external-API (UIDAI, MGNREGA, Agri) with graceful degradation
+5. **CQRS** — Loan writes to PostgreSQL; reads from Elasticsearch
+6. **Event Sourcing** — Immutable loan lifecycle audit trail
+7. **Strategy Pattern** — Credit scoring: online (full features) vs. offline (interview-only)
+8. **Template Method** — Loan workflow FSM with hot-reloadable routing rules
+9. **Adapter Pattern** — Unified interface for UIDAI, ABHA, Credit Bureaus
+10. **Decorator Pattern** — Consent layer wraps every data service call (DPDP compliance)
+
+---
+
+## 🌍 Real-World Analogues
+
+| Platform | What We Learned |
+|---------|----------------|
+| **Eko India** (150K+ BC agents) | Agent-first model; AePS design; retailer-as-bank-branch |
+| **FINO Payments Bank** (700K+ points) | Offline POS design; hybrid connectivity; rural cash management |
+| **KreditBee / Moneyview** | Alt credit scoring; thin-file borrowers; mobile-first loan origination |
+| **NPCI FiMI** | India-built AI for financial workflows; sovereign LLM approach |
+| **Shriram Finance** | Multi-lingual, cloud-native platform for Tier 2/3 cities |
+
+---
+
+**Last Updated**: February 2026
+**Version**: 1.0
+**Status**: Design Complete
