@@ -1,389 +1,423 @@
-# Mitra Finance — Class Diagram
+# Class Diagram — CricZone: Local Cricket Community Platform
 
-> **⚠️ Core Requirements**: Classes are organized by bounded context and map to [ARCHITECTURE.md](./ARCHITECTURE.md) service boundaries.
-
-## Table of Contents
-1. [Domain Layer — Core Entities](#domain-layer--core-entities)
-2. [AI & Scoring Domain](#ai--scoring-domain)
-3. [Offline & Sync Domain](#offline--sync-domain)
-4. [Service Layer](#service-layer)
-5. [Infrastructure / Adapter Layer](#infrastructure--adapter-layer)
+> Class diagrams are organized by **bounded context** (DDD). Relationships (association, composition, dependency) are shown across contexts where coupling exists.
 
 ---
 
-## Domain Layer — Core Entities
+## 1. Identity & Access Management
 
 ```mermaid
 classDiagram
-    class Mitra {
-        +String id
-        +String fullName
-        +String phoneNumber
-        +String deviceSerialNumber
-        +String deviceCertificateId
-        +String assignedRegion
-        +MitraStatus status
-        +LocalDate onboardedDate
-        +String supervisorId
-        +int dailyApplicationCount
-        +float approvalRate
-        +register() void
-        +suspend() void
-        +getPerformanceReport() MitraReport
+    class User {
+        +String userId
+        +String mobileNumber
+        +String name
+        +String email
+        +String profilePhotoUrl
+        +String city
+        +UserRole role
+        +UserStatus status
+        +DateTime createdAt
+        +register()
+        +verifyOTP()
+        +updateProfile()
+        +deactivate()
     }
 
-    class Customer {
-        +String id
-        +String virtualId
-        +String maskedAadhaarNumber
-        +String phoneNumber
-        +String dialect
-        +KYCStatus kycStatus
-        +LocalDate kycVerifiedDate
-        +LocalDate kycExpiryDate
-        +String mitraId
-        +boolean abhaLinked
-        +getActiveLoans() List~LoanApplication~
-        +revokeConsent(ConsentType) void
+    class UserRole {
+        <<enumeration>>
+        PLAYER
+        ORGANIZER
+        FAN
+        SCORER
+        STORE_OWNER
+        SPONSOR
+        ADMIN
     }
 
-    class LoanApplication {
-        +String id
-        +String customerId
-        +String mitraId
-        +LoanType loanType
-        +BigDecimal requestedAmount
-        +int requestedTenureMonths
-        +LoanStatus status
-        +String creditScoreId
-        +LocalDateTime submittedAt
-        +LocalDateTime lastUpdatedAt
-        +String assignedOfficerId
-        +String rejectionReasonCode
-        +List~LoanDocument~ documents
-        +submit() void
-        +route() void
-        +approve(String reason) void
-        +reject(String reason) void
+    class UserStatus {
+        <<enumeration>>
+        PENDING_VERIFICATION
+        ACTIVE
+        SUSPENDED
+        DEACTIVATED
     }
 
-    class LoanDocument {
-        +String id
-        +String loanApplicationId
-        +DocumentType documentType
-        +String s3Key
-        +String ocrExtractedDataJson
-        +float ocrConfidence
-        +boolean humanVerified
-        +LocalDateTime uploadedAt
-        +String uploadedByMitraId
+    class KYCVerification {
+        +String kycId
+        +String userId
+        +String documentType
+        +String documentNumber
+        +KYCStatus status
+        +DateTime verifiedAt
+        +verify()
+        +reject()
     }
 
-    class ConsentRecord {
-        +String id
-        +String customerId
-        +ConsentType consentType
-        +ConsentPurpose purpose
-        +LocalDateTime grantedAt
-        +LocalDateTime expiresAt
-        +ConsentStatus status
-        +String voiceConsentS3Key
-        +String mitraId
-        +grant() void
-        +revoke() void
-        +isActive() boolean
+    class KYCStatus {
+        <<enumeration>>
+        PENDING
+        APPROVED
+        REJECTED
     }
 
-    class LoanRepayment {
-        +String id
-        +String loanId
-        +int emiNumber
-        +BigDecimal amount
-        +LocalDate dueDate
-        +LocalDate paidDate
-        +RepaymentStatus status
-        +String transactionReference
-        +record() void
-        +isOverdue() boolean
+    class Session {
+        +String sessionId
+        +String userId
+        +String jwtToken
+        +String refreshToken
+        +DateTime expiresAt
+        +invalidate()
+        +refresh()
     }
 
-    LoanApplication "1" --> "many" LoanDocument : contains
-    LoanApplication "1" --> "1" Customer : for
-    LoanApplication "1" --> "1" Mitra : submitted by
-    LoanApplication "1" --> "many" LoanRepayment : has
-    Customer "1" --> "many" ConsentRecord : has
-    Mitra "many" --> "many" Customer : serves
-
-    note for ConsentRecord "Append-only. No UPDATE or DELETE.\nDPDP Act 2023 compliance."
-    note for Customer "Aadhaar VID stored, not raw number.\nZero-PII by design."
+    User "1" --> "1" UserRole : has
+    User "1" --> "1" UserStatus : has
+    User "1" --> "0..1" KYCVerification : undergoes
+    KYCVerification "1" --> "1" KYCStatus : has
+    User "1" --> "*" Session : opens
 ```
 
 ---
 
-## AI & Scoring Domain
+## 2. Tournament & Competition Management
 
 ```mermaid
 classDiagram
-    class CreditInterview {
-        +String id
-        +String loanApplicationId
-        +String dialect
-        +InterviewStatus status
-        +List~InterviewTurn~ turns
-        +Map~String, ExtractedField~ structuredOutput
-        +float overallConfidence
-        +String modelVersion
-        +LocalDateTime conductedAt
-        +start() void
-        +addTurn(InterviewTurn) void
-        +finalize() CreditInterviewSummary
+    class Tournament {
+        +String tournamentId
+        +String name
+        +TournamentFormat format
+        +TournamentStatus status
+        +String organizerId
+        +Date startDate
+        +Date endDate
+        +Int maxTeams
+        +String city
+        +create()
+        +openRegistration()
+        +autoScheduleFixtures()
+        +close()
+        +clone() Tournament
     }
 
-    class InterviewTurn {
-        +String id
-        +String interviewId
-        +int sequenceNumber
-        +String questionText
-        +String questionAudioS3Key
-        +String responseTranscription
-        +String responseAudioS3Key
-        +float asrConfidence
-        +Map~String, ExtractedField~ extractedFields
+    class TournamentFormat {
+        <<enumeration>>
+        T20
+        ODI
+        BOX_CRICKET
+        ONE_DAY_LEAGUE
     }
 
-    class ExtractedField {
-        +String fieldName
-        +String rawValue
-        +Object parsedValue
-        +float confidence
-        +boolean humanVerified
-        +String correctedValue
+    class TournamentStatus {
+        <<enumeration>>
+        DRAFT
+        REGISTRATION_OPEN
+        IN_PROGRESS
+        COMPLETED
+        CANCELLED
     }
 
-    class CreditScore {
-        +String id
-        +String customerId
-        +String loanApplicationId
-        +int score
-        +RiskBand riskBand
-        +BigDecimal recommendedMaxAmount
-        +int recommendedTenureMonths
-        +List~ScoreFactor~ topFactors
-        +String modelVersion
-        +String modelId
-        +LocalDateTime calculatedAt
-        +boolean isOfflineScore
-        +getRiskBand() RiskBand
-        +toExplainabilityReport() ExplainReport
+    class Team {
+        +String teamId
+        +String teamName
+        +String captainId
+        +String tournamentId
+        +List~String~ playerIds
+        +Int squadSize
+        +register()
+        +selectPlayingXI() List~String~
     }
 
-    class ScoreFactor {
-        +String factorName
-        +float shapValue
-        +String humanReadableExplanation
-        +String direction
+    class TeamRegistration {
+        +String registrationId
+        +String teamId
+        +String tournamentId
+        +RegistrationStatus status
+        +DateTime registeredAt
+        +approve()
+        +reject()
     }
 
-    class AltDataSignal {
-        +String customerId
-        +SignalType signalType
-        +String rawValue
-        +float normalizedValue
-        +String source
-        +LocalDate fetchedDate
-        +boolean isConsentGranted
+    class Fixture {
+        +String fixtureId
+        +String tournamentId
+        +String team1Id
+        +String team2Id
+        +String groundId
+        +String umpireId
+        +DateTime scheduledAt
+        +MatchRound round
+        +schedule()
+        +reschedule()
     }
 
-    CreditInterview "1" --> "many" InterviewTurn : contains
-    InterviewTurn "1" --> "many" ExtractedField : produces
-    CreditScore "1" --> "many" ScoreFactor : explained by
-    CreditScore "1" --> "1" CreditInterview : derived from
-    AltDataSignal "many" --> "1" CreditScore : feeds into
+    class PointsTableEntry {
+        +String teamId
+        +String tournamentId
+        +Int matchesPlayed
+        +Int wins
+        +Int losses
+        +Int noResults
+        +Int points
+        +Float netRunRate
+        +update()
+    }
 
-    note for CreditScore "isOfflineScore=true when only interview signals used.\nmodelVersion enables reproducibility audit."
+    Tournament "1" --> "*" Team : has
+    Tournament "1" --> "*" Fixture : contains
+    Tournament "1" --> "*" PointsTableEntry : tracks
+    Team "1" --> "1" TeamRegistration : created via
+    TeamRegistration "1" --> "1" RegistrationStatus
+    Fixture "1" --> "1" MatchRound
 ```
 
 ---
 
-## Offline & Sync Domain
+## 3. Live Match & Scoring
 
 ```mermaid
 classDiagram
-    class SyncQueueItem {
-        +String clientId
-        +String operationType
-        +String entityType
-        +String entityId
-        +String payloadJson
-        +SyncStatus status
-        +int retryCount
-        +LocalDateTime createdAt
-        +LocalDateTime lastAttemptAt
-        +String errorMessage
-        +int priority
-        +markSynced() void
-        +markFailed(String error) void
-        +shouldRetry() boolean
+    class Match {
+        +String matchId
+        +String fixtureId
+        +MatchStatus status
+        +String scorerId
+        +String winnerTeamId
+        +String resultSummary
+        +start()
+        +endInnings()
+        +declareResult()
+        +undo()
     }
 
-    class SyncSession {
-        +String id
-        +String mitraId
-        +String deviceId
-        +LocalDateTime startedAt
-        +LocalDateTime completedAt
-        +int itemsSynced
-        +int itemsFailed
-        +int conflictsResolved
-        +SyncStrategy conflictStrategy
-        +generateReport() SyncReport
+    class MatchStatus {
+        <<enumeration>>
+        SCHEDULED
+        IN_PROGRESS
+        INNINGS_BREAK
+        COMPLETED
+        ABANDONED
     }
 
-    class ConflictRecord {
-        +String id
-        +String syncSessionId
-        +String entityType
-        +String entityId
-        +String localVersion
-        +String serverVersion
-        +ConflictResolution resolution
-        +String resolvedVersion
-        +LocalDateTime resolvedAt
+    class Innings {
+        +String inningsId
+        +String matchId
+        +String battingTeamId
+        +String bowlingTeamId
+        +Int inningsNumber
+        +Int totalRuns
+        +Int totalWickets
+        +Int totalExtras
+        +Int oversCompleted
+        +Int target
+        +addBallEvent()
+        +calculatePartnership()
     }
 
-    class OfflineBiometricToken {
-        +String customerId
-        +String tokenHash
-        +LocalDateTime issuedAt
-        +LocalDateTime expiresAt
-        +String mitraId
-        +boolean isRevoked
-        +isValid() boolean
-        +revoke() void
+    class BallEvent {
+        +String ballEventId
+        +String matchId
+        +String inningsId
+        +Int overNumber
+        +Int ballNumber
+        +Int runsScored
+        +WicketType wicketType
+        +String dismissedBatsmanId
+        +ExtraType extraType
+        +Int extraRuns
+        +String batsmanId
+        +String bowlerId
+        +DateTime recordedAt
     }
 
-    SyncSession "1" --> "many" SyncQueueItem : processes
-    SyncSession "1" --> "many" ConflictRecord : records
-    
-    note for SyncQueueItem "priority: KYC=1, Loan=2, Documents=3\nEnsures critical data synced first."
-    note for OfflineBiometricToken "8-hour expiry window.\nAllows repeat customer visits in same field session."
+    class BattingCard {
+        +String batsmanId
+        +String matchId
+        +Int runsScored
+        +Int ballsFaced
+        +Int fours
+        +Int sixes
+        +Boolean isOut
+        +WicketType wicketType
+        +String bowlerId
+        +calculateStrikeRate() Float
+    }
+
+    class BowlingCard {
+        +String bowlerId
+        +String matchId
+        +Int oversBowled
+        +Int runsConceded
+        +Int wicketsTaken
+        +Int maidenOvers
+        +Int wides
+        +Int noBalls
+        +calculateEconomy() Float
+    }
+
+    class WicketType {
+        <<enumeration>>
+        BOWLED
+        CAUGHT
+        LBW
+        RUN_OUT
+        STUMPED
+        HIT_WICKET
+        RETIRED
+    }
+
+    Match "1" --> "2" Innings : has
+    Innings "1" --> "*" BallEvent : records
+    Innings "1" --> "*" BattingCard : generates
+    Innings "1" --> "*" BowlingCard : generates
+    BallEvent "1" --> "0..1" WicketType : may have
 ```
 
 ---
 
-## Service Layer
+## 4. Player Analytics & AI
 
 ```mermaid
 classDiagram
-    class LoanOriginationService {
-        -LoanRepository loanRepo
-        -ConsentService consentService
-        -OCRService ocrService
-        -CreditScoringEngine scoringEngine
-        +createDraft(CreateLoanRequest) LoanApplication
-        +addDocument(String loanId, MultipartFile) LoanDocument
-        +submit(String loanId) LoanApplication
-        +getStatus(String loanId) LoanStatus
+    class PlayerProfile {
+        +String playerId
+        +String userId
+        +String primaryRole
+        +String battingStyle
+        +String bowlingStyle
+        +Int matchesPlayed
+        +DateTime debutDate
     }
 
-    class CreditScoringEngine {
-        -MLModelRegistry modelRegistry
-        -AltDataAggregator altDataAggregator
-        -CreditScoreRepository scoreRepo
-        +scoreOnline(String customerId, CreditInterview) CreditScore
-        +scoreOffline(CreditInterview) CreditScore
-        +getExplainability(String scoreId) ExplainReport
-        +retrainScheduled() void
+    class CareerStats {
+        +String playerId
+        +Int totalRuns
+        +Int totalWickets
+        +Int totalCatches
+        +Float battingAverage
+        +Float battingStrikeRate
+        +Float bowlingAverage
+        +Float bowlingEconomy
+        +Int centuries
+        +Int halfCenturies
+        +Int bestBowlingWickets
+        +Int bestBowlingRuns
+        +update()
     }
 
-    class SyncService {
-        -SyncQueueRepository queueRepo
-        -IdempotencyStore idempotencyStore
-        -ConflictResolver conflictResolver
-        +processBatch(List~SyncQueueItem~) SyncResult
-        +resolveConflict(ConflictRecord) ResolvedEntity
-        +getQueueDepth(String mitraId) int
+    class MatchPerformance {
+        +String performanceId
+        +String playerId
+        +String matchId
+        +Int runsScored
+        +Int ballsFaced
+        +Int wicketsTaken
+        +Float economy
+        +Int catches
+        +DateTime matchDate
     }
 
-    class ConsentService {
-        -ConsentRepository consentRepo
-        -AuditLogger auditLogger
-        -EventPublisher eventPublisher
-        +grantConsent(GrantConsentRequest) ConsentRecord
-        +revokeConsent(String consentId) void
-        +checkConsent(String customerId, ConsentType) boolean
-        +processErasureRequest(String customerId) ErasureStatus
+    class PlayerPerformanceScore {
+        +String ppsId
+        +String playerId
+        +Float score
+        +String grade
+        +DateTime calculatedAt
+        +Map~String, Float~ componentScores
+        +calculate()
+        +getGrade() String
     }
 
-    class LoanWorkflowEngine {
-        -RoutingRuleConfig routingConfig
-        -SLAMonitor slaMonitor
-        -EventPublisher eventPublisher
-        +route(LoanApplication) WorkflowDecision
-        +autoApprove(String loanId) void
-        +assign(String loanId, String officerId) void
-        +escalate(String loanId) void
-        +recordDecision(String loanId, Decision) void
+    class AIInsight {
+        +String insightId
+        +String playerId
+        +String insightText
+        +String insightCategory
+        +Float confidenceScore
+        +DateTime generatedAt
+        +generate()
     }
 
-    LoanOriginationService --> CreditScoringEngine : calls
-    LoanOriginationService --> ConsentService : checks
-    LoanOriginationService --> LoanWorkflowEngine : submits to
-    SyncService --> LoanOriginationService : replays queued ops
+    PlayerProfile "1" --> "1" CareerStats : has
+    PlayerProfile "1" --> "*" MatchPerformance : has
+    PlayerProfile "1" --> "1" PlayerPerformanceScore : has
+    PlayerProfile "1" --> "*" AIInsight : receives
 ```
 
 ---
 
-## Infrastructure / Adapter Layer
+## 5. Commerce & Social
 
 ```mermaid
 classDiagram
-    class AadhaarAdapter {
-        <<interface>>
-        +authenticate(String aadhaarVid, String otp) KYCData
-        +verifyBiometric(String aadhaarVid, BiometricData) boolean
-        +getVirtualId(String mobileNumber) String
+    class Store {
+        +String storeId
+        +String ownerId
+        +String name
+        +String address
+        +Float latitude
+        +Float longitude
+        +String phone
+        +Float rating
+        +StoreStatus status
+        +List~String~ productCategories
+        +updateProfile()
+        +publishOffer()
     }
 
-    class UIDIAIAadhaarAdapter {
-        -String apiEndpoint
-        -String clientCertificate
-        -String asa_code
-        +authenticate(String aadhaarVid, String otp) KYCData
-        +verifyBiometric(String aadhaarVid, BiometricData) boolean
-        +getVirtualId(String mobileNumber) String
+    class Offer {
+        +String offerId
+        +String storeId
+        +String title
+        +String description
+        +Float discountPercentage
+        +Date validUntil
+        +Int maxRedemptions
+        +Int currentRedemptions
+        +OfferStatus status
+        +generateQRCode() String
+        +redeem()
     }
 
-    class CreditBureauAdapter {
-        <<interface>>
-        +getScore(String panNumber) CreditBureauReport
-        +isThinFile(String panNumber) boolean
+    class Post {
+        +String postId
+        +String authorId
+        +PostType type
+        +String content
+        +String mediaUrl
+        +Int likesCount
+        +Int commentsCount
+        +Boolean isAutoGenerated
+        +DateTime createdAt
+        +publish()
+        +delete()
     }
 
-    class MLModelRegistry {
-        -Map~String, ONNXModel~ models
-        -Map~String, ModelMetadata~ metadata
-        +loadModel(String modelId) ONNXModel
-        +getLatestVersion(ModelType) String
-        +getModelAuditRecord(String modelId) ModelAuditRecord
+    class Poll {
+        +String pollId
+        +String postId
+        +String question
+        +List~PollOption~ options
+        +DateTime expiresAt
+        +vote()
+        +getResults() Map
     }
 
-    class IdempotencyStore {
-        -RedisTemplate redisTemplate
-        +isDuplicate(String clientId) boolean
-        +markProcessed(String clientId) void
-        +getResult(String clientId) Optional~Object~
+    class Sponsorship {
+        +String dealId
+        +String sponsorId
+        +String tournamentId
+        +SponsorshipTier tier
+        +SponsorshipStatus status
+        +String contractUrl
+        +DateTime activatedAt
+        +activate()
+        +generateContract()
+        +getROIDashboard() ROIMetrics
     }
 
-    AadhaarAdapter <|.. UIDIAIAadhaarAdapter
-    CreditBureauAdapter <|.. ExperianAdapter
-    CreditBureauAdapter <|.. CRIFAdapter
-    CreditScoringEngine --> MLModelRegistry : uses
-    SyncService --> IdempotencyStore : checks
+    Store "1" --> "*" Offer : publishes
+    Post "1" --> "0..1" Poll : may have
+    Sponsorship "1" --> "1" SponsorshipTier
 ```
-
----
-
-**Last Updated**: February 2026
-**Version**: 1.0
-**Status**: Design Complete

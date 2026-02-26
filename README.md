@@ -1,126 +1,57 @@
-# Mitra Finance — AI-Powered Rural Financial Inclusion Platform
+# CricZone — Local Cricket Community Platform: Design Kata
 
-> **Architecture Kata** — A comprehensive system design for a voice-first, offline-capable lending platform empowering Bank Mitras to serve India's 650M+ unbanked rural citizens.
-
-## 🎯 Problem Statement
-
-A fintech startup is building a platform to connect **Bank Mitras (BC Agents)** with **New-to-Credit rural customers** across Tier 2/3 India. The platform must support:
-- AI-assisted KYC and loan origination with **zero literacy requirements**
-- Credit scoring for customers with **no CIBIL history**
-- **100% offline functionality** in areas with no internet connectivity
-- Support for **12+ Indian dialects** via voice-first interaction
+## Overview
+This design kata models **CricZone**, a community cricket super-app that brings organization and recognition to local cricket games across Indian metro cities. Inspired by **ESPN's live scoring ecosystem** (US model) and **WeChat's super-app engagement mechanics** (China model), CricZone delivers real-time live scoring, player performance analytics, nearest cricket store discovery with offers, sponsorship matchmaking, and tournament management — in a single, cost-conscious, mobile-first platform.
 
 ---
 
-## 📋 Quick Start
+## Documentation Index
 
-### What is Mitra Finance?
+### 1. Requirements & Business Analysis
+- **[FUNCTIONAL_REQUIREMENTS.md](./FUNCTIONAL_REQUIREMENTS.md)**: 11 Functional Requirements (User Registration, Tournament Management, Ground Booking, Live Scoring, Player Analytics, Store Locator, Sponsorship, Community, Notifications, Media Reporting, Admin) + 7 Non-Functional Requirements.
+- **[ACTORS_AND_USE_CASES.md](./ACTORS_AND_USE_CASES.md)**: 10 Actors (Player, Organizer, Fan, Scorer, Store Owner, Sponsor, Admin + 3 automated) and 12 detailed Use Cases with Mermaid use case diagram.
 
-Mitra Finance enables a Bank Mitra to:
-- **Onboard rural customers** using Aadhaar OTP + biometric KYC — with 4-level fallback for edge cases
-- **Conduct a voice credit interview** in the customer's local dialect using on-device AI (IndicASR + LangChain + Sarvam AI)
-- **Generate an AI credit score** based on MGNREGA records, utility bills, and agricultural data — no CIBIL required
-- **Submit loan applications offline** — stored in encrypted SQLite, synced automatically when connectivity returns
+### 2. Architecture & Microservices
+- **[MICROSERVICES.md](./MICROSERVICES.md)**: 11 Microservices with DDD bounded context identification, service responsibilities, owned data, key APIs, event flows (Kafka), and inter-service communication patterns (REST, Kafka, WebSocket, FCM).
 
-### Rama Devi's Journey (Example Customer)
-> Bihar farmer. No CIBIL score. No bank branch for 28km. Needs ₹15,000 for seeds.
->
-> → Bank Mitra visits with Android tablet. Aadhaar OTP KYC. On-device AI interview in Bhojpuri. Alt credit score: 672 (MEDIUM). Submitted offline. Hours later, synced and approved. ₹15,000 in Jan Dhan account. At 14% APR.
+### 3. Technical Diagrams
+- **[SEQUENCE_DIAGRAMS.md](./SEQUENCE_DIAGRAMS.md)**: 4 Sequence Diagrams — Player Registration, Ball-by-Ball Live Scoring & Fan Update, Tournament Creation & Team Registration, Sponsor Match & Branding Activation.
+- **[CLASS_DIAGRAM.md](./CLASS_DIAGRAM.md)**: 5 bounded-context class diagrams — Identity & Access (User, KYC, Session), Tournament (Tournament, Fixture, PointsTable), Live Match (Innings, BallEvent, BattingCard, BowlingCard), Player Analytics (CareerStats, PPS, AIInsight), Commerce (Store, Offer, Post, Sponsorship).
+- **[ER_DIAGRAM.md](./ER_DIAGRAM.md)**: Full ERD with 20 table definitions (PostgreSQL + PostGIS), column specs, relationships, and strategic indexes including geo-spatial index for Store Locator.
+- **[STATE_DIAGRAM.md](./STATE_DIAGRAM.md)**: 5 State machines — Match, Tournament, Ground Booking, Offer, and Sponsorship Deal lifecycles.
+- **[ACTIVITY_DIAGRAM.md](./ACTIVITY_DIAGRAM.md)**: 4 Activity workflows — Tournament Setup & Scheduling, Ball-by-Ball Live Scoring, Player Analytics Update, Store Offer Discovery & Redemption.
+- **[FLOWCHART.md](./FLOWCHART.md)**: 4 Decision flowcharts — Match Result Decision Engine, PPS Calculation, Sponsor Matching Algorithm, Notification Routing.
+- **[OBJECT_DIAGRAM.md](./OBJECT_DIAGRAM.md)**: 3 Runtime object snapshots — Live Match In Progress, Tournament Registration (7/8 teams confirmed), Offer Redemption In Progress.
 
-### Key Metrics
-| Metric | Target |
-|--------|--------|
-| Loan origination time | < 15 minutes |
-| Offline operations | 100% core functionality |
-| Dialects supported | 12 at launch, 22 by Year 2 |
-| AI credit score AUC | > 0.75 (validation) |
-| Biometric KYC time | < 60 seconds |
-| App load on 3G | < 5 seconds |
+### 4. API & Integration
+- **[API_SPECIFICATION.md](./API_SPECIFICATION.md)**: RESTful API definitions for 8 service areas (Auth, User, Tournament, Live Scoring, Player Analytics, Store & Offers, Sponsorship, Community) with JSON request/response examples and standard error format.
 
----
+### 5. QA & Testing
+- **[TEST_STRATEGY.md](./TEST_STRATEGY.md)**: 60+ test cases mapped to FRs, API test specs, integration test plan (4 E2E flows), performance/load profiles, security tests (OWASP Top 10), 10 edge cases, and acceptance criteria.
 
-## 📚 Documents
+### 6. Guiding Principles
+- **[GUIDING_PRINCIPLES.md](./GUIDING_PRINCIPLES.md)**: Concrete application of SOLID, KISS, and YAGNI with CricZone-specific examples, cricket-domain analogy explanations, comparison tables, and design rationale.
 
-### Core Documents
-| Document | Description |
-|----------|-------------|
-| [KEY_REQUIREMENTS.md](./KEY_REQUIREMENTS.md) | 10 FRs + 6 NFRs + Requirements Traceability Matrix |
-| [BUSINESS_PERSPECTIVE.md](./BUSINESS_PERSPECTIVE.md) | Market analysis, TAM/SAM/SOM, revenue model, real-world analogues (Eko, FINO, KreditBee) |
-| [ACTORS_AND_USE_CASES.md](./ACTORS_AND_USE_CASES.md) | 7 actors, 11 use cases, Mermaid use-case diagram |
-| [FEATURES.md](./FEATURES.md) | 13 features with user stories, acceptance criteria, tech specs, 3-phase roadmap |
-
-### Technical Design
-| Document | Description |
-|----------|-------------|
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | High-level, offline-first, AI component diagrams + tech stack + 10 design patterns + security |
-| [CLASS_DIAGRAM.md](./CLASS_DIAGRAM.md) | Domain, AI/Scoring, Offline/Sync, Service, and Infrastructure layers |
-| [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) | Cloud PostgreSQL schema (10 tables) + On-device SQLite schema + ERD + indexes |
-| [SEQUENCE_DIAGRAMS.md](./SEQUENCE_DIAGRAMS.md) | 6 key flows: KYC, AI Interview, Loan + Alt Scoring, Offline Sync, Approval Workflow, DPDP Consent |
-| [API_SPECIFICATION.md](./API_SPECIFICATION.md) | 9 REST API sections with full JSON request/response examples |
-
-### Specialized Documents
-| Document | Description |
-|----------|-------------|
-| [SECURITY_DESIGN.md](./SECURITY_DESIGN.md) | Biometric fallback chain, DPDP Act 2023 compliance, encryption map, KYC/AML, RBAC |
-| [AGENTS_AND_AI.md](./AGENTS_AND_AI.md) | ASR pipeline, LangChain interview agent, alt credit scoring engine, model governance, bias audits |
-| [OFFLINE_SYNC_STRATEGY.md](./OFFLINE_SYNC_STRATEGY.md) | Store-and-Forward queue design, conflict resolution, sync storm handling (10K Mitras) |
-| [EDGE_CASES.md](./EDGE_CASES.md) | 23 edge cases across 8 categories — Jury Q&A shield with architecture-grounded answers |
-
-### Presentation
-| Document | Description |
-|----------|-------------|
-| [PRESENTATION_SCRIPT.md](./PRESENTATION_SCRIPT.md) | 3–4 minute read-aloud script + Q&A cheat sheet |
+### 7. Presentation Resources
+- **[PRESENTATION_SCRIPT.md](./PRESENTATION_SCRIPT.md)**: Specialized script for the 'Class Diagram' and 'Technology Stack' slides with technical rationale for bounded contexts, JSONB choices, India-specific WhatsApp notifications, and cost-conscious architecture decisions.
 
 ---
 
-## 🏗️ Technology Stack
+## Key Design Highlights
 
-| Layer | Technology |
-|-------|-----------|
-| **Mobile App** | React Native (Expo Bare) |
-| **On-Device AI** | ONNX Runtime (IndicASR, Phi-2, XGBoost, IndicTTS) |
-| **Local DB** | SQLite + SQLCipher (AES-256) |
-| **API Gateway** | Kong (mTLS + JWT) |
-| **Backend** | Go (Golang) — Core services; Node.js BFF |
-| **AI Orchestration** | LangChain + Sarvam AI Saaras (India-first LLM) |
-| **Credit Scoring** | XGBoost + LightGBM Ensemble (SHAP explainability) |
-| **Event Backbone** | Apache Kafka |
-| **Database** | PostgreSQL 15 |
-| **Cache** | Redis Cluster |
-| **Storage** | AWS S3 (ap-south-1 — India data residency) |
-| **Infrastructure** | Kubernetes (EKS) + SQS (sync storm buffer) |
-| **Sync Protocol** | Protocol Buffers (delta sync, 5× smaller than JSON) |
-| **Monitoring** | Prometheus + Grafana + OpenTelemetry + Jaeger |
+- **India-First Mobile Architecture:** OTP-based auth (Aadhaar-friendly), WhatsApp Business API as notification fallback (500M Indian users), UPI/Razorpay for payments — every choice mirrors how top Indian consumer apps (CRED, Meesho, Swiggy) are built.
+- **US Model Inspiration (ESPN):** Live ball-by-ball push notifications for milestones and wickets; Cricinfo/Baseball Reference-style comprehensive statistics portal; deep-linking from notifications to live scorecards.
+- **China Super-App Inspiration (WeChat/Douyin):** In-app tournament registration flow (Mini Program analogy), auto-generated shareable player stat cards for WhatsApp/social, short video-ready highlight hooks in the community feed architecture.
+- **Event-Driven Architecture:** Kafka backbone decouples live scoring from analytics, notifications, and reporting — scoring continues even if analytics service is unavailable.
+- **11 Microservices (DDD):** Decomposed by bounded context with clear team ownership, independent data stores, and async communication. Live Scoring is isolated for independent high-availability scaling.
+- **AI-Powered Features:** Player Performance Score (PPS) — composite 0–100 index updated post-match; AI sponsorship matching algorithm (geography + audience + budget scoring); AI text commentary generation for each ball event.
+- **Cost-Conscious MVP:** Managed services (Firebase Auth, Razorpay, CloudFront CDN) over self-hosted infrastructure. Target: < ₹50,000/month operational cost during metro India pilot (6 months pre-revenue).
+- **Phased Rollout:** Feature flags enable city-by-city expansion from metro launch (Mumbai, Delhi, Bengaluru, Chennai, Hyderabad, Pune) to national scale — no architecture changes needed.
 
 ---
 
-## 🔐 Key Design Patterns
-
-1. **Offline-First** — SQLite is the primary state; cloud is eventual sync target
-2. **Store-and-Forward** — Priority queue with idempotent server ingestion
-3. **Saga Pattern** — Distributed loan approval → disbursement orchestration
-4. **Circuit Breaker** — Per-external-API (UIDAI, MGNREGA, Agri) with graceful degradation
-5. **CQRS** — Loan writes to PostgreSQL; reads from Elasticsearch
-6. **Event Sourcing** — Immutable loan lifecycle audit trail
-7. **Strategy Pattern** — Credit scoring: online (full features) vs. offline (interview-only)
-8. **Template Method** — Loan workflow FSM with hot-reloadable routing rules
-9. **Adapter Pattern** — Unified interface for UIDAI, ABHA, Credit Bureaus
-10. **Decorator Pattern** — Consent layer wraps every data service call (DPDP compliance)
-
----
-
-## 🌍 Real-World Analogues
-
-| Platform | What We Learned |
-|---------|----------------|
-| **Eko India** (150K+ BC agents) | Agent-first model; AePS design; retailer-as-bank-branch |
-| **FINO Payments Bank** (700K+ points) | Offline POS design; hybrid connectivity; rural cash management |
-| **KreditBee / Moneyview** | Alt credit scoring; thin-file borrowers; mobile-first loan origination |
-| **NPCI FiMI** | India-built AI for financial workflows; sovereign LLM approach |
-| **Shriram Finance** | Multi-lingual, cloud-native platform for Tier 2/3 cities |
-
----
-
-**Last Updated**: February 2026
-**Version**: 1.0
-**Status**: Design Complete
+## Status
+- **Version:** 1.0
+- **Status:** Design Complete
+- **Target Market:** Metro India (Phase 1); Pan-India (Phase 2)
+- **Last Updated:** February 2026

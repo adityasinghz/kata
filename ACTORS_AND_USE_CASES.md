@@ -1,314 +1,271 @@
-# Actors & Use Cases — Mitra Finance
-
-> **⚠️ Core Requirements**: All use cases map to requirements in [KEY_REQUIREMENTS.md](./KEY_REQUIREMENTS.md).
-
-## Table of Contents
-1. [Actors](#actors)
-2. [Use Case Diagram](#use-case-diagram)
-3. [Use Case Details](#use-case-details)
-
----
+# Actors & Use Cases — CricZone: Local Cricket Community Platform
 
 ## Actors
 
-### Primary Actors (Human)
+### Primary Actors
+1. **Player:** Registered cricket player who participates in matches and tournaments, tracks personal statistics, views performance analytics, and engages with the community feed.
+2. **Organizer:** Tournament and match organizer who creates tournaments, schedules matches, manages grounds, assigns umpires, and oversees the full event lifecycle.
+3. **Fan:** Casual cricket enthusiast who follows live scores, community posts, and player/team profiles without necessarily playing.
+4. **Scorer:** Designated individual responsible for entering ball-by-ball scoring data during a live match.
+5. **Store Owner:** Local cricket equipment store operator who lists their store, manages their product catalog, and posts in-app offers.
+6. **Sponsor:** Brand or business that sponsors local tournaments and teams for visibility and community engagement.
+7. **System Administrator:** Platform admin who manages users, content moderation, platform configuration, and feature flags.
 
-| # | Actor | Role | Tech Interface |
-|---|-------|------|---------------|
-| 1 | **Bank Mitra (BC Agent)** | Field agent who onboards customers, conducts KYC, and submits loan applications on behalf of rural customers | Android Mobile App (offline-capable) |
-| 2 | **Rural Customer** | The loan applicant; New-to-Credit, low literacy, speaks local dialect | Interacts via Mitra's device + voice |
-| 3 | **Credit Officer (L1)** | Reviews medium-risk loan applications forwarded by the workflow engine | Web Dashboard |
-| 4 | **Regional Manager (L2)** | Approves high-value or escalated loans; monitors Mitra performance in region | Web Dashboard + Mobile |
-| 5 | **Compliance Officer** | Ensures KYC, AML, DPDP Act, and RBI guideline adherence | Web Dashboard |
-| 6 | **Platform Admin** | Manages Mitras, AI rules, integrations, and system configuration | Admin Panel |
-
-### Secondary Actors (System / External)
-
-| # | Actor | Role |
-|---|-------|------|
-| 7 | **AI Engine** | Conducts voice credit interview, generates risk score, routes approvals |
-| 8 | **UIDAI (Aadhaar)** | External identity authority; provides eKYC and OTP verification |
-| 9 | **ABHA (Health Records)** | External health identity authority; provides health data with consent |
-| 10 | **Credit Bureaus** | Experian / CRIF for thin-file check; primarily a fallback |
-| 11 | **RBI / Regulator** | Receives compliance reports; sets policy thresholds |
+### Secondary / Automated Actors
+1. **AI/ML Engine:** Generates Player Performance Scores, auto-commentary, offer recommendations, and sponsorship match suggestions.
+2. **Notification Service:** Delivers real-time alerts (push, SMS, WhatsApp, email) triggered by match events, tournament updates, and offer expirations.
+3. **Payment Gateway:** Handles ground booking fees and any premium in-app transactions (Razorpay / UPI integration).
 
 ---
 
 ## Use Case Diagram
 
 ```mermaid
-graph TD
-    subgraph Actors
-        Mitra["🧑 Bank Mitra"]
-        Customer["👤 Rural Customer"]
-        CO["👔 Credit Officer"]
-        RM["🏢 Regional Manager"]
-        Compliance["⚖️ Compliance Officer"]
-        Admin["🛠 Platform Admin"]
-        AI["🤖 AI Engine"]
-        UIDAI["🏛 UIDAI (External)"]
-        ABHA["🏥 ABHA (External)"]
+graph LR
+    subgraph Primary Actors
+        PL["🏏 Player"]
+        OR["📋 Organizer"]
+        FN["👤 Fan"]
+        SC["📊 Scorer"]
+        SO["🏪 Store Owner"]
+        SP["💼 Sponsor"]
+        AD["⚙️ Admin"]
+    end
+
+    subgraph Secondary Actors
+        AI["🤖 AI/ML Engine"]
+        NS["🔔 Notification Service"]
+        PG["💳 Payment Gateway"]
     end
 
     subgraph Use Cases
-        UC1["UC1: Register Customer (KYC)"]
-        UC2["UC2: Biometric Identity Verification"]
-        UC3["UC3: Assisted Loan Application"]
-        UC4["UC4: Document Capture (OCR)"]
-        UC5["UC5: GenAI Voice Credit Interview"]
-        UC6["UC6: Generate Alt. Credit Score"]
-        UC7["UC7: Offline Queue & Sync"]
-        UC8["UC8: Loan Approval Workflow"]
-        UC9["UC9: Manage Consent (DPDP)"]
-        UC10["UC10: Send Notifications & EMI Reminders"]
-        UC11["UC11: Admin & Compliance Reporting"]
+        UC1["UC-1: Register & Manage Account"]
+        UC2["UC-2: Create & Manage Tournament"]
+        UC3["UC-3: Book & Manage Ground"]
+        UC4["UC-4: Live Score a Match"]
+        UC5["UC-5: View Live Scorecard"]
+        UC6["UC-6: Track Player Performance"]
+        UC7["UC-7: Discover Stores & Offers"]
+        UC8["UC-8: Manage Sponsorship"]
+        UC9["UC-9: Engage with Community"]
+        UC10["UC-10: Receive Notifications"]
+        UC11["UC-11: View Analytics & Reports"]
+        UC12["UC-12: Moderate Content & Manage Platform"]
     end
 
-    Mitra --> UC1
-    Mitra --> UC2
-    Mitra --> UC3
-    Mitra --> UC4
-    Mitra --> UC5
-    Mitra --> UC7
-    Mitra --> UC9
-    Customer --> UC2
-    Customer --> UC5
-    AI --> UC5
-    AI --> UC6
-    AI --> UC8
-    UIDAI --> UC1
-    UIDAI --> UC2
-    ABHA --> UC1
-    CO --> UC8
-    RM --> UC8
-    Compliance --> UC9
-    Compliance --> UC11
-    Admin --> UC11
-    UC3 --> UC6
-    UC1 --> UC2
-    UC5 --> UC6
+    PL --> UC1 & UC4 & UC5 & UC6 & UC7 & UC9 & UC10
+    OR --> UC1 & UC2 & UC3 & UC5 & UC8 & UC9 & UC10 & UC11
+    FN --> UC1 & UC5 & UC7 & UC9 & UC10
+    SC --> UC4
+    SO --> UC1 & UC7
+    SP --> UC1 & UC8
+    AD --> UC12
+    AI --> UC6 & UC8
+    NS --> UC10
+    PG --> UC3
 ```
 
 ---
 
-## Use Case Details
+## Use Cases
 
-### UC1: Register Customer (KYC)
-**Actor**: Bank Mitra, UIDAI, ABHA
-**Precondition**: Mitra is logged in and customer is physically present
-**Trigger**: Mitra taps "New Customer"
-
-**Main Flow**:
-1. Mitra enters customer's mobile number
-2. System sends Aadhaar OTP to customer's Aadhaar-linked mobile
-3. Customer speaks/enters OTP via Mitra's device
-4. UIDAI validates OTP and returns masked eKYC data (name, DOB, address, photo)
-5. Mitra captures a live selfie for liveness check
-6. System matches selfie against Aadhaar photo (face matching)
-7. System prompts for ABHA linkage consent (optional)
-8. Customer profile created in local DB; sync queued
-
-**Alternate Flow A (UIDAI Down)**:
-- System notifies Mitra: "Aadhaar service unavailable"
-- Mitra captures physical Aadhaar copy via camera (OCR)
-- Application flagged for manual KYC review post-connectivity
-
-**Alternate Flow B (No Aadhaar-linked mobile)**:
-- Escalate to Offline KYC: physical document capture + supervisor sign-off
-
-**Success Criteria**: Customer record created with verification status; KYC data not stored (only VID token)
+### UC-1: Register & Manage Account
+- **Actor:** Player / Organizer / Fan / Store Owner / Sponsor
+- **Goal:** Create a CricZone account and configure profile.
+- **Preconditions:** User has a mobile number or Google/Facebook account.
+- **Main Flow:**
+    1. User opens the app and taps "Register."
+    2. User selects role (Player / Organizer / Fan / Store Owner / Sponsor).
+    3. User enters mobile number; system sends OTP.
+    4. User verifies OTP and completes profile (name, photo, city, preferred format).
+    5. System creates account and grants role-based access.
+- **Alternate Flow (Social Login):**
+    1. User taps "Sign in with Google."
+    2. System auto-provisions account with Google profile data.
+    3. User selects role and completes cricket-specific profile fields.
+- **Alternate Flow (KYC for Store Owner / Sponsor):**
+    1. User submits Aadhaar/PAN details for verification.
+    2. System validates and activates the business profile.
 
 ---
 
-### UC2: Biometric Identity Verification
-**Actor**: Bank Mitra, Rural Customer, UIDAI
-**Precondition**: Customer registered (UC1 complete)
-**Trigger**: Customer returns for subsequent transaction (loan disbursement, EMI)
-
-**Main Flow**:
-1. Mitra finds customer by mobile number or QR code
-2. System prompts fingerprint capture
-3. Customer places finger on device sensor or external USB scanner
-4. Biometric match verified against UIDAI (AePS-style)
-5. Auth token issued (8-hour validity, cached offline)
-6. Activity logged in immutable audit trail
-
-**Alternate Flow A (Dirty/Damaged Finger)**:
-- System retries 3 times → switches to face liveness check
-**Alternate Flow B (Elderly with worn fingerprints)**:
-- Face liveness + Mitra supervisor co-sign → conditional auth
-
----
-
-### UC3: Assisted Loan Application
-**Actor**: Bank Mitra
-**Precondition**: Customer KYC verified (UC2 complete)
-**Trigger**: Mitra taps "New Loan Application"
-
-**Main Flow**:
-1. Mitra selects loan type (Agriculture / MSME / Personal)
-2. System pre-fills customer data from KYC
-3. AI Credit Interview initiated (UC5)
-4. Alt Credit Score generated (UC6)
-5. Mitra reviews AI-extracted data; edits if needed
-6. Mitra uploads supporting documents (UC4)
-7. Mitra reviews final application and submits
-8. If offline: Application saved locally → queued for sync
-9. If online: Application submitted → Loan Workflow Engine routes it (UC8)
-
-**Success Criteria**: Complete application in < 15 minutes; zero data loss if connection drops mid-flow
+### UC-2: Create & Manage Tournament
+- **Actor:** Organizer
+- **Goal:** Set up a cricket tournament with teams, matches, and schedules.
+- **Preconditions:** Organizer is authenticated with Organizer role.
+- **Main Flow:**
+    1. Organizer taps "Create Tournament" and enters name, format (T20/ODI/Box Cricket), start date, number of teams.
+    2. Organizer sets registration deadline for teams.
+    3. Organizer shares tournament registration link with teams.
+    4. Teams register and submit squad (players).
+    5. Organizer reviews registrations and confirms participating teams.
+    6. Organizer uses "Auto-Schedule" or manually creates match fixtures.
+    7. Organizer assigns grounds and umpires to each match.
+    8. System publishes the fixture list to all registered players and fans.
+    9. Organizer updates results and points table progresses automatically.
+- **Alternate Flow (Tournament Clone):**
+    1. Organizer selects "Clone Previous Tournament."
+    2. System pre-fills all settings from the earlier tournament.
+    3. Organizer adjusts dates and confirms.
 
 ---
 
-### UC4: Document Capture (OCR)
-**Actor**: Bank Mitra
-**Precondition**: Loan application open
-**Trigger**: Mitra taps "Add Document"
-
-**Main Flow**:
-1. Mitra selects document type (Utility Bill, Land Record, PAN, Shop License)
-2. Camera opens with guided frame overlay
-3. Mitra captures image; OCR extracts key fields in real-time
-4. System displays extracted data for Mitra review/correction
-5. Image compressed (< 500KB) for upload
-6. Document encrypted and queued for upload
-
-**Alternate Flows**:
-- Illegible document → "Poor quality, retake" prompt
-- Handwritten document → low-confidence fields flagged for manual entry
-
----
-
-### UC5: GenAI Voice Credit Interview
-**Actor**: AI Engine, Rural Customer, Bank Mitra
-**Precondition**: Loan application initiated (UC3)
-**Trigger**: System auto-launches interview after KYC
-
-**Main Flow**:
-1. System auto-detects customer's dialect from first utterance
-2. TTS plays first question: "आपकी मासिक आमदनी क्या है?" (What is your monthly income?)
-3. Customer responds verbally
-4. ASR transcribes → Dialect NLP extracts structured data
-5. LLM generates follow-up question based on response
-6. Repeat for 8–12 questions covering: income, expenses, assets, livelihood, dependents
-7. Confidence score generated per field
-8. Low-confidence fields highlighted for Mitra to verify manually
-
-**Offline Handling**:
-- Entire interview runs on-device (ONNX quantized models); no connectivity needed
-- Responses stored locally; full session synced when online
+### UC-3: Book & Manage Ground
+- **Actor:** Organizer / Player
+- **Goal:** Reserve a cricket ground for a specific date and time slot.
+- **Preconditions:** Ground is listed on the platform with availability calendar.
+- **Main Flow:**
+    1. User searches for grounds by city/area using map or list view.
+    2. User selects a ground, views profile (photos, pitch type, amenities, pricing).
+    3. User selects date and time slot from the availability calendar.
+    4. System checks slot availability and presents booking summary.
+    5. User confirms and pays via UPI / Razorpay.
+    6. System sends booking confirmation with QR code.
+    7. Ground owner is notified of the confirmed booking.
+- **Alternate Flow (Slot Unavailable):**
+    1. Selected slot is already booked.
+    2. System suggests the next 3 available slots.
 
 ---
 
-### UC6: Generate Alternative Credit Score
-**Actor**: AI Engine
-**Precondition**: Voice interview complete (UC5); optional: alt data sources queried
-**Trigger**: Auto-triggered after interview completion
-
-**Main Flow**:
-1. Feature pipeline aggregates:
-   - Voice interview structured output (income, assets, liabilities)
-   - MGNREGA work days (government API)
-   - Utility payment history (from document OCR)
-   - Agricultural zone data (drought/flood index for past 24 months)
-   - Mobile recharge frequency (operator API — with consent)
-2. ML model generates risk score (300–850)
-3. Score mapped to risk band: LOW (700+), MEDIUM (550–699), HIGH (< 550)
-4. Recommended loan amount and tenure generated
-5. Explainability: Top 3 score drivers displayed to Credit Officer
-6. Score stored against application with model version tag
-
-**Offline Handling**:
-- Cached ML model (ONNX) runs scoring on-device
-- External data (MGNREGA, weather) used only when connectivity available
+### UC-4: Live Score a Match
+- **Actor:** Scorer
+- **Goal:** Enter ball-by-ball scoring data during a live match.
+- **Preconditions:** Match exists in the system, Scorer is assigned to the match by the Organizer.
+- **Main Flow:**
+    1. Scorer opens the match in the app and taps "Start Scoring."
+    2. System displays the scoring interface with batting team, bowler, and over count.
+    3. Scorer taps the outcome for each ball: runs (0–6), wicket type, extras (wide, no-ball, bye, leg-bye).
+    4. System updates live scorecard in real-time (< 3 seconds propagation).
+    5. System auto-generates commentary: "Rohit hits a six off the last ball of the over — 58 runs needed off 30!" 
+    6. At end of innings, Scorer confirms and system calculates the target.
+    7. At match end, Scorer confirms result; system locks scorecard and updates player stats.
+- **Alternate Flow (Correction):**
+    1. Scorer notices an entry error.
+    2. Scorer taps "Undo Last Ball" (up to 5 balls allowed before Organizer confirmation).
 
 ---
 
-### UC7: Offline Queue & Auto-Sync
-**Actor**: Bank Mitra, SyncService
-**Trigger**: Network connection established after offline session
-
-**Main Flow**:
-1. Device detects network (WiFi or 3G+)
-2. SyncService reads pending items from local SQLite `sync_queue` table
-3. Items processed in priority order: KYC verifications → Loan submissions → Documents
-4. Each item sent with idempotency key (prevents duplicate processing)
-5. Server acknowledges each item; local record marked `synced`
-6. Conflicts detected and resolved (server-wins for financial records)
-7. Mitra's UI shows: "Sync complete — 4 applications uploaded"
-
-**Conflict Resolution**:
-- If same application edited both locally and server-side → Server version wins; Mitra notified
-
----
-
-### UC8: Loan Approval Workflow
-**Actor**: Credit Officer, Regional Manager, AI Engine
-**Trigger**: Loan application submitted (online or synced from offline)
-
-**Main Flow**:
-1. AI Engine evaluates risk score → routes by band:
-   - LOW risk + amount < ₹25K → **Auto-Approve** (< 30 seconds)
-   - MEDIUM risk or amount ₹25K–₹2L → **L1 Credit Officer** (4h SLA)
-   - HIGH risk or amount > ₹2L → **L2 Regional Manager** (24h SLA)
-2. Credit Officer receives alert; reviews application + AI score explanation
-3. Officer provides decision: Approve / Reject / Request More Info
-4. Approved → disbursement triggered (Jan Dhan account credit via IMPS)
-5. Mitra + Customer notified of outcome via SMS + push
-
-**SLA Escalation**:
-- L1 breaches 4h → Auto-escalates to L2
-- L2 breaches 24h → Alert to Regional Director
+### UC-5: View Live Scorecard
+- **Actor:** Player / Fan / Organizer
+- **Goal:** Follow the match in real-time via the live scorecard.
+- **Preconditions:** A match is in progress and Scorer has started scoring.
+- **Main Flow:**
+    1. User opens "Live Matches" from the home screen.
+    2. System shows all ongoing matches with current score snippets.
+    3. User taps a match to open the live scorecard.
+    4. System renders: batting team score, current over, last ball commentary, batting partnerships, bowling figures, fall of wickets.
+    5. Scorecard updates are pushed via WebSocket with < 3-second latency.
+    6. User can tap a player name to view their in-match stats and career statistics inline.
+- **Alternate Flow (Match Ends):**
+    1. Match is completed; scorecard transitions to final result view.
+    2. System publishes match highlights post to the community feed automatically.
 
 ---
 
-### UC9: Manage Consent (DPDP Act)
-**Actor**: Bank Mitra, Rural Customer, Compliance Officer
-**Trigger**: Any new data collection event
-
-**Main Flow**:
-1. Before any data type collected, system reads consent policy
-2. TTS explains consent in customer's dialect: "We want to use your electricity bill to evaluate your loan. Do you agree?"
-3. Customer provides verbal "हाँ" (Yes) → voice print recorded as consent artifact
-4. Consent record created: dataType, purpose, timestamp, duration, customerVID, mitraID
-5. Consent stored as immutable append-only log
-6. Customer can revoke any consent via Mitra at any time
-
-**Revocation Flow**:
-1. Customer requests revocation
-2. System marks consent as REVOKED; data processing halted for that data type
-3. Data deletion workflow triggered if customer exercises Right to Erasure
-4. Completion confirmed within 72 hours; audit record created
+### UC-6: Track Player Performance
+- **Actor:** Player / Organizer / Fan / AI Engine
+- **Goal:** View and analyze a player's cricket statistics across matches and tournaments.
+- **Preconditions:** Player has participated in at least one scored match.
+- **Main Flow:**
+    1. User navigates to a player's profile.
+    2. System displays Player Performance Score (PPS: 0–100), calculated by AI Engine.
+    3. User views batting, bowling, and fielding stats with filters (All Time / Tournament / Last 10 matches).
+    4. System renders form charts: runs trend, strike rate progression.
+    5. AI generates insights: "Arjun's strike rate drops by 18% against left-arm spinners — possible weakness."
+    6. User taps "Compare" to run head-to-head comparison with another player.
+    7. User taps "Share" to generate and share a stat card image.
+- **Alternate Flow (Head-to-Head):**
+    1. User searches for a second player.
+    2. System renders a split-screen comparison of key stats.
 
 ---
 
-### UC10: Send Notifications & EMI Reminders
-**Actor**: Notification Service
-**Trigger**: Loan status events, EMI due dates
-
-**Notification Events**:
-- Loan approved → Push + SMS to Mitra + Customer
-- Loan rejected → Push + SMS with reason code
-- EMI due in 3 days → WhatsApp voice message in customer's dialect
-- KYC expiring in 30 days → Push to Mitra
-- Sync queue > 10 items and offline > 4h → Alert to Mitra
-
----
-
-### UC11: Admin & Compliance Reporting
-**Actor**: Compliance Officer, Platform Admin
-**Trigger**: Scheduled (daily/monthly) or on-demand
-
-**Reports**:
-- Mitra activity report (applications/day, approval rate, fraud flags)
-- Loan portfolio health (NPA rate by risk band, geography)
-- AML/KYC screening report
-- DPDP consent audit report
-- RBI quarterly regulatory submission (Format: BC-001)
-- AI model audit trail (which model version scored which loan, on which date)
+### UC-7: Discover Stores & Offers
+- **Actor:** Player / Fan / Store Owner
+- **Goal:** Find nearby cricket equipment stores and avail exclusive offers.
+- **Preconditions:** User has granted location permission.
+- **Main Flow (Discovery):**
+    1. User taps "Stores" from the home screen.
+    2. System shows a map with nearby cricket stores within 10 km.
+    3. User taps a store pin to view profile: name, products, rating, address, phone, opening hours.
+    4. User views active offers listed under the store: "20% off on Kookaburra bats this week."
+    5. User taps "Redeem Offer" to generate a QR code.
+    6. Store owner scans QR code at the counter to validate the offer.
+- **Main Flow (Store Owner — Posting Offers):**
+    1. Store Owner logs in and navigates to "My Store > Offers."
+    2. Store Owner creates an offer: title, discount %, product, validity, maximum redemptions.
+    3. System publishes offer and pushes notification to followers of the store.
 
 ---
 
-**Last Updated**: February 2026
-**Version**: 1.0
-**Status**: Design Complete
+### UC-8: Manage Sponsorship
+- **Actor:** Organizer / Sponsor / AI Engine
+- **Goal:** Connect sponsors with local cricket tournaments for mutual visibility.
+- **Preconditions:** Organizer has a published tournament; Sponsor has a verified business profile.
+- **Main Flow (Organizer Seeks Sponsor):**
+    1. Organizer navigates to "Sponsorship" from the tournament management screen.
+    2. Organizer sets sponsorship requirements: expected reach, tiers available (Title/Co-Sponsor/Associate), visibility benefits.
+    3. AI Engine matches the tournament with relevant sponsors based on location, sport type, and audience demographics.
+    4. System notifies matched sponsors with a sponsorship proposal.
+- **Main Flow (Sponsor Accepts):**
+    1. Sponsor reviews the proposal: tournament details, expected viewers, branding benefits.
+    2. Sponsor accepts; system auto-generates a digital sponsorship agreement.
+    3. Sponsor logos are displayed on: live scorecards, match banners, community posts, and digital jerseys.
+    4. Sponsor views real-time ROI dashboard: match views, offer redemptions, fan reach.
+- **Alternate Flow (No Match Found):**
+    1. AI Engine finds no matching sponsors in the area.
+    2. System suggests posting the requirement in the public Sponsorship Marketplace.
+
+---
+
+### UC-9: Engage with Community
+- **Actor:** Player / Organizer / Fan
+- **Goal:** Participate in the CricZone community through posts, discussions, and polls.
+- **Main Flow:**
+    1. User opens the Community Feed.
+    2. System shows a personalized feed: match highlights, player achievements, followed team updates, and trending posts.
+    3. User creates a post: text, photo, or a 60-second video clip.
+    4. User can react (like, applaud), comment, and share posts.
+    5. User participates in a fan poll: "Who will win the Metro Championship final?"
+    6. Post-match, system auto-posts a match summary card; users comment and discuss.
+- **Alternate Flow (Leaderboard):**
+    1. User taps "Tournament Leaderboard."
+    2. System shows top scorers, top wicket-takers, and most catches ranked within a tournament.
+
+---
+
+### UC-10: Receive Notifications
+- **Actor:** Player / Organizer / Fan / Store Owner / Sponsor
+- **Goal:** Get timely real-time alerts for events relevant to the user.
+- **Preconditions:** User has configured notification preferences.
+- **Main Flow:**
+    1. A trigger event occurs: wicket, match start, tournament fixture published, new offer, sponsorship interest.
+    2. Notification Service evaluates the event and the user's subscription preferences.
+    3. System delivers via the configured channel (Push > WhatsApp > SMS).
+    4. User taps notification to deep-link into the relevant match, tournament, or offer screen.
+- **Alternate Flow (Bulk Notifications):**
+    1. Major local final is live; system sends a "Go Live" push to all fans who follow either team.
+
+---
+
+### UC-11: View Analytics & Reports
+- **Actor:** Organizer / Sponsor / Media
+- **Goal:** Access structured match and tournament statistics for reporting and analysis.
+- **Main Flow:**
+    1. Organizer opens the analytics section of a completed tournament.
+    2. System displays: top performers, team statistics, match results table, average runs per over.
+    3. Organizer exports a PDF tournament report for distribution to players and sponsors.
+    4. Sports media accesses the public statistics API (JSON) for their match coverage.
+
+---
+
+### UC-12: Moderate Content & Manage Platform
+- **Actor:** System Administrator
+- **Goal:** Ensure platform health, safety, and correct operation.
+- **Main Flow:**
+    1. Admin reviews flagged posts or user-reported content.
+    2. Admin takes action: remove post, warn user, or ban account.
+    3. Admin adjusts feature flags for a new city rollout (e.g., enable "Store Locator" in Pune).
+    4. Admin pushes a system announcement: "CricZone is live in Chennai!"
+    5. Admin monitors platform health dashboard: active users, live matches, error rates.

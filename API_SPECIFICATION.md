@@ -1,479 +1,430 @@
-# Mitra Finance — API Specification
+# API Specification — CricZone: Local Cricket Community Platform
 
-> **⚠️ Core Requirements**: APIs map to [ACTORS_AND_USE_CASES.md](./ACTORS_AND_USE_CASES.md) and are secured per [SECURITY_DESIGN.md](./SECURITY_DESIGN.md).
-
-All APIs are:
-- **Base URL**: `https://api.mitrafinance.in/v1`
-- **Auth**: `Authorization: Bearer <JWT>` (Mitra token) or `X-Device-Cert: <certificate>` (mTLS)
-- **Content-Type**: `application/json` (unless specified as `application/protobuf` for sync endpoints)
-- **Error Format**: `{ "error": { "code": "ERR_CODE", "message": "...", "requestId": "uuid" } }`
+> RESTful API definitions for 10 service areas. All APIs require `Authorization: Bearer <jwt>` unless marked `[PUBLIC]`. Base URL: `https://api.criczone.in/v1`
 
 ---
 
-## Table of Contents
-1. [Authentication & KYC](#1-authentication--kyc)
-2. [Customers](#2-customers)
-3. [Loan Applications](#3-loan-applications)
-4. [Credit Interview & Scoring](#4-credit-interview--scoring)
-5. [Consent Management](#5-consent-management)
-6. [Sync (Offline-First)](#6-sync-offline-first)
-7. [Loan Workflow & Decisions](#7-loan-workflow--decisions)
-8. [Notifications](#8-notifications)
-9. [Admin & Reporting](#9-admin--reporting)
+## 1. Auth APIs
 
----
-
-## 1. Authentication & KYC
-
-### POST `/auth/kyc/initiate`
-Initiate Aadhaar OTP for customer KYC.
-
-**Request**:
+### POST /auth/otp/send
+Send OTP to mobile number for registration or login.
 ```json
+// Request
 {
-  "phoneNumber": "+919876543210",
-  "mitraId": "uuid-mitra-123"
+  "mobileNumber": "+91-9876543210"
+}
+
+// Response 200 OK
+{
+  "status": "OTP_SENT",
+  "otpExpiry": "2024-03-01T10:05:00Z"
 }
 ```
-**Response** `202 Accepted`:
+
+### POST /auth/otp/verify
+Verify OTP and receive JWT tokens.
 ```json
+// Request
 {
-  "sessionId": "kyc-session-uuid",
-  "otpExpiry": "2026-02-20T11:54:06Z",
-  "message": "OTP sent to Aadhaar-linked mobile"
+  "mobileNumber": "+91-9876543210",
+  "otp": "482931"
+}
+
+// Response 200 OK
+{
+  "userId": "a3f1c2d4-...",
+  "jwt": "eyJhbGci...",
+  "refreshToken": "rt_Xf2...",
+  "role": "PLAYER",
+  "isNewUser": true
+}
+
+// Error 400 Bad Request
+{
+  "error": "INVALID_OTP",
+  "message": "OTP is incorrect or expired",
+  "retryAllowed": true
 }
 ```
-**Errors**: `400 BAD_PHONE`, `503 UIDAI_UNAVAILABLE`
 
----
-
-### POST `/auth/kyc/verify`
-Verify Aadhaar OTP and retrieve masked eKYC data.
-
-**Request**:
+### POST /auth/refresh
+Refresh expired JWT using refreshToken.
 ```json
-{
-  "sessionId": "kyc-session-uuid",
-  "virtualId": "9876 5432 1234 5678",
-  "otp": "847392"
-}
-```
-**Response** `200 OK`:
-```json
-{
-  "verified": true,
-  "maskedAadhaar": "XXXX-XXXX-3210",
-  "ekycData": {
-    "name": "Ramesh Kumar",
-    "dob": "1985-04-12",
-    "gender": "M",
-    "address": "Village Sarai, Dist. Varanasi, UP",
-    "photoBase64": "<base64-encoded-face-image>"
-  },
-  "consentRequired": ["AADHAAR_EKYC"],
-  "biometricTokenExpiry": "2026-02-20T19:49:06Z"
-}
-```
-**Errors**: `401 OTP_INVALID`, `410 OTP_EXPIRED`
+// Request
+{ "refreshToken": "rt_Xf2..." }
 
----
-
-### POST `/auth/mitra/login`
-Mitra app login using phone + TOTP.
-
-**Request**:
-```json
-{
-  "phoneNumber": "+919876543210",
-  "totp": "847392",
-  "deviceCertificate": "-----BEGIN CERTIFICATE-----..."
-}
-```
-**Response** `200 OK`:
-```json
-{
-  "accessToken": "eyJhbGciOiJS...",
-  "refreshToken": "rt-uuid",
-  "expiresIn": 900,
-  "mitraProfile": {
-    "id": "uuid", "name": "Sunita Devi", "region": "Bihar-North"
-  }
-}
+// Response 200 OK  
+{ "jwt": "eyJhbG...", "expiresAt": "2024-03-01T12:00:00Z" }
 ```
 
 ---
 
-## 2. Customers
+## 2. User APIs
 
-### POST `/customers`
-Create a new customer profile post-KYC.
-
-**Request**:
+### GET /users/{userId}
 ```json
+// Response 200 OK
 {
-  "virtualId": "9876 5432 1234 5678",
-  "maskedAadhaar": "XXXX-XXXX-3210",
-  "name": "Ramesh Kumar",
-  "dialect": "bhojpuri",
-  "mitraId": "uuid-mitra-123",
-  "kycSessionId": "kyc-session-uuid"
-}
-```
-**Response** `201 Created`:
-```json
-{
-  "customerId": "cust-uuid-456",
-  "kycStatus": "VERIFIED",
-  "kycExpiresAt": "2028-02-20T00:00:00Z"
+  "userId": "a3f1c2d4-...",
+  "name": "Arjun Sharma",
+  "mobileNumber": "+91-9876543210",
+  "city": "Mumbai",
+  "role": "PLAYER",
+  "pps": 78.5,
+  "ppsGrade": "Good",
+  "profilePhotoUrl": "cdn.criczone.in/photos/arjun.jpg",
+  "joinedAt": "2024-01-15T10:00:00Z"
 }
 ```
 
----
-
-### GET `/customers/{customerId}`
-Retrieve customer profile (masked PII only).
-
-**Response** `200 OK`:
+### PUT /users/{userId}/profile
+Update user profile fields.
 ```json
+// Request
 {
-  "id": "cust-uuid-456",
-  "maskedAadhaar": "XXXX-XXXX-3210",
-  "dialect": "bhojpuri",
-  "kycStatus": "VERIFIED",
-  "abhaLinked": false,
-  "activeLoans": 0
+  "name": "Arjun Sharma",
+  "city": "Pune",
+  "battingStyle": "Right-hand bat",
+  "bowlingStyle": "Right-arm medium"
 }
+
+// Response 200 OK
+{ "status": "UPDATED", "userId": "a3f1c2d4-..." }
 ```
 
 ---
 
-## 3. Loan Applications
+## 3. Tournament APIs
 
-### POST `/loans`
-Submit a new loan application.
-
-**Request**:
+### POST /tournaments
+Create a new tournament (Organizer only).
 ```json
+// Request
 {
-  "customerId": "cust-uuid-456",
-  "mitraId": "uuid-mitra-123",
-  "loanType": "AGRICULTURE",
-  "requestedAmount": 35000,
-  "tenureMonths": 12,
-  "interviewId": "intv-uuid-789",
-  "clientIdempotencyKey": "client-generated-uuid"
+  "name": "Metro T20 Cup 2024",
+  "format": "T20",
+  "city": "Mumbai",
+  "startDate": "2024-03-15",
+  "maxTeams": 8,
+  "registrationDeadline": "2024-03-10"
+}
+
+// Response 201 Created
+{
+  "tournamentId": "TRN-001",
+  "status": "DRAFT",
+  "registrationLink": "https://criczone.in/join/TRN-001"
 }
 ```
-**Response** `201 Created`:
+
+### GET /tournaments/{id}
 ```json
+// Response 200 OK [PUBLIC]
 {
-  "loanId": "loan-uuid-001",
-  "status": "SUBMITTED",
-  "creditScoreId": "score-uuid-001",
-  "creditScore": 672,
-  "riskBand": "MEDIUM",
-  "routedTo": "L1_CREDIT_OFFICER",
-  "expectedDecisionBy": "2026-02-20T15:49:06Z"
+  "tournamentId": "TRN-001",
+  "name": "Metro T20 Cup 2024",
+  "format": "T20",
+  "status": "IN_PROGRESS",
+  "city": "Mumbai",
+  "teamsCount": 8,
+  "matchesPlayed": 5,
+  "totalMatches": 15
 }
 ```
-**Errors**: `409 DUPLICATE_APPLICATION` (when idempotencyKey already exists)
 
----
-
-### GET `/loans/{loanId}`
-Get full loan application details.
-
-**Response** `200 OK`:
+### POST /tournaments/{id}/register-team
+Team captain registers their team.
 ```json
+// Request
 {
-  "id": "loan-uuid-001",
-  "customerId": "cust-uuid-456",
-  "loanType": "AGRICULTURE",
-  "requestedAmount": 35000,
-  "approvedAmount": null,
-  "status": "UNDER_REVIEW",
-  "creditScore": { "score": 672, "riskBand": "MEDIUM" },
-  "assignedOfficer": { "id": "officer-uuid", "name": "Ananya Sharma" },
-  "documents": [
-    { "type": "UTILITY_BILL", "uploadedAt": "2026-02-20T11:49:06Z", "ocrConfidence": 0.92 }
-  ],
-  "timeline": [
-    { "status": "SUBMITTED", "at": "2026-02-20T11:49:06Z" },
-    { "status": "UNDER_REVIEW", "at": "2026-02-20T11:50:00Z" }
+  "teamName": "Mumbai Stars",
+  "players": [
+    { "userId": "U-001", "isCaptain": true },
+    { "userId": "U-002", "isViceCaptain": true }
+  ]
+}
+
+// Response 200 OK
+{
+  "registrationId": "REG-001",
+  "status": "PENDING",
+  "message": "Registration submitted. Awaiting organizer approval."
+}
+```
+
+### GET /tournaments/{id}/points-table
+```json
+// Response 200 OK [PUBLIC]
+{
+  "tournamentId": "TRN-001",
+  "lastUpdated": "2024-03-18T15:30:00Z",
+  "entries": [
+    { "rank": 1, "teamName": "Mumbai Stars", "played": 4, "won": 3, "lost": 1, "points": 6, "nrr": "+1.234" },
+    { "rank": 2, "teamName": "Andheri XI", "played": 4, "won": 2, "lost": 2, "points": 4, "nrr": "+0.562" }
+  ]
+}
+```
+
+### POST /tournaments/{id}/schedule/auto-generate
+```json
+// Response 201 Created
+{
+  "fixturesGenerated": 15,
+  "format": "ROUND_ROBIN_THEN_KNOCKOUT",
+  "fixtures": [
+    { "fixtureId": "F-01", "team1": "Mumbai Stars", "team2": "Andheri XI", "scheduledAt": "2024-03-15T09:00:00Z" }
   ]
 }
 ```
 
 ---
 
-### POST `/loans/{loanId}/documents`
-Upload a supporting document.
+## 4. Live Scoring APIs
 
-**Content-Type**: `multipart/form-data`
-**Request Fields**: `file` (JPEG/PNG < 5MB), `documentType`, `loanId`
-
-**Response** `201 Created`:
+### POST /matches/{id}/score/ball
+Record a ball event during a live match (Scorer only).
 ```json
+// Request
 {
-  "documentId": "doc-uuid-001",
-  "documentType": "UTILITY_BILL",
-  "ocrExtracted": {
-    "providerName": "UP Power Corporation",
-    "accountHolder": "Ramesh Kumar",
-    "billDate": "2026-01-15",
-    "amountPaid": 840,
-    "paymentStatus": "PAID"
+  "overNumber": 12,
+  "ballNumber": 3,
+  "runsScored": 4,
+  "batsmanId": "P-001",
+  "bowlerId": "P-012",
+  "extraType": null,
+  "wicketType": null
+}
+
+// Response 200 OK
+{
+  "scorecard": {
+    "battingTeam": "Mumbai Stars",
+    "score": "87/3",
+    "overs": "12.3",
+    "currentStriker": { "name": "Arjun", "runs": 52, "balls": 34 },
+    "currentBowler": { "name": "Vijay", "overs": "2.3", "runs": 24, "wickets": 2 }
   },
-  "ocrConfidence": 0.92,
-  "uploadedAt": "2026-02-20T11:49:06Z"
+  "lastBall": { "runs": 4, "commentary": "Cracking drive through covers! FOUR!" }
 }
+```
+
+### GET /matches/{id}/scorecard [PUBLIC]
+```json
+// Response 200 OK
+{
+  "matchId": "M-2024-001",
+  "status": "IN_PROGRESS",
+  "battingTeam": "Mumbai Stars",
+  "score": "87/3",
+  "overs": "12.3",
+  "target": null,
+  "recentBalls": ["4", "0", "1", "W", "6", "1"],
+  "partnerships": { "current": { "runs": 44, "balls": 30 } },
+  "sponsorOverlay": { "name": "SportZone India", "logoUrl": "cdn.criczone.in/sponsors/sportzone.png" }
+}
+```
+
+### POST /matches/{id}/undo
+Undo the last ball event.
+```json
+// Response 200 OK
+{ "status": "UNDONE", "ballsUndoable": 4, "restoredScore": "83/3" }
 ```
 
 ---
 
-## 4. Credit Interview & Scoring
+## 5. Player Analytics APIs
 
-### POST `/interviews`
-Start a new credit interview session.
-
-**Request**:
+### GET /players/{id}/stats
 ```json
+// Response 200 OK [PUBLIC]
 {
-  "loanApplicationId": "loan-uuid-001",
-  "dialect": "bhojpuri",
-  "isOffline": false
-}
-```
-**Response** `201 Created`:
-```json
-{
-  "interviewId": "intv-uuid-789",
-  "firstQuestion": "आपकी मासिक आमदनी क्या है?",
-  "firstQuestionAudioUrl": "https://cdn.mitrafinance.in/tts/q1-bhojpuri.wav"
-}
-```
-
----
-
-### POST `/interviews/{interviewId}/turns`
-Submit a voice response for the current question.
-
-**Content-Type**: `multipart/form-data`
-**Request Fields**: `audioFile` (WAV 16kHz), `turnSequence`
-
-**Response** `200 OK`:
-```json
-{
-  "turnId": "turn-uuid-001",
-  "transcription": "हमार महीना कमाई डेढ़ हजार रुपइया हऊ",
-  "asrConfidence": 0.87,
-  "extractedFields": {
-    "monthly_income": { "value": 1500, "unit": "INR", "confidence": 0.84 }
+  "playerId": "P-001",
+  "name": "Arjun Sharma",
+  "pps": 78.5,
+  "ppsGrade": "Good",
+  "batting": {
+    "matches": 42,
+    "runs": 1240,
+    "average": 38.7,
+    "strikeRate": 124.5,
+    "centuries": 2,
+    "halfCenturies": 8,
+    "highScore": 108
   },
-  "nextQuestion": "आपके परिवार में कितने लोग हैं?",
-  "nextQuestionAudioUrl": "https://cdn.mitrafinance.in/tts/q2-bhojpuri.wav",
-  "isComplete": false
+  "bowling": {
+    "wickets": 15,
+    "economy": 7.8,
+    "average": 32.4,
+    "bestFigures": "3/24"
+  },
+  "fielding": { "catches": 18, "runOuts": 4 }
+}
+```
+
+### GET /players/compare?player1={id}&player2={id}
+```json
+// Response 200 OK [PUBLIC]
+{
+  "player1": { "name": "Arjun Sharma", "runs": 1240, "pps": 78.5 },
+  "player2": { "name": "Rahul Verma", "runs": 980, "pps": 65.2 },
+  "winner": { "category": "Overall PPS", "playerId": "P-001" }
+}
+```
+
+### GET /players/{id}/insights
+```json
+// Response 200 OK
+{
+  "insights": [
+    { "category": "WEAKNESS", "text": "Strike rate drops 22% against left-arm spin", "confidence": 0.87 },
+    { "category": "STRENGTH", "text": "Excellent in powerplay — avg SR 145 in overs 1-6", "confidence": 0.92 }
+  ]
 }
 ```
 
 ---
 
-### GET `/scores/{scoreId}`
-Retrieve a credit score with explainability.
+## 6. Store & Offers APIs
 
-**Response** `200 OK`:
+### GET /stores/nearby?lat={lat}&lng={lng}&radius={km}
 ```json
+// Response 200 OK [PUBLIC]
 {
-  "id": "score-uuid-001",
-  "score": 672,
-  "riskBand": "MEDIUM",
-  "recommendedMaxAmount": 40000,
-  "recommendedTenureMonths": 18,
-  "topFactors": [
-    { "factor": "UTILITY_PAYMENT_CONSISTENCY", "shapValue": 0.18, "direction": "POSITIVE", "explanation": "12 consecutive on-time electricity bill payments" },
-    { "factor": "MGNREGA_EMPLOYMENT", "shapValue": 0.14, "direction": "POSITIVE", "explanation": "145 days employment in past year" },
-    { "factor": "LOAN_AMOUNT_TO_INCOME_RATIO", "shapValue": -0.09, "direction": "NEGATIVE", "explanation": "Requested amount is 2.3× monthly income" }
-  ],
-  "modelVersion": "lgbm-v2.1-2026Q1",
-  "isOfflineScore": false,
-  "calculatedAt": "2026-02-20T11:50:20Z"
-}
-```
-
----
-
-## 5. Consent Management
-
-### POST `/consent`
-Grant a new consent.
-
-**Request**:
-```json
-{
-  "customerId": "cust-uuid-456",
-  "consentType": "UTILITY_DATA",
-  "purpose": "To evaluate creditworthiness for loan origination",
-  "expiresAt": "2027-02-20T00:00:00Z",
-  "voiceConsentBase64": "<base64-encoded-wav>",
-  "mitraId": "uuid-mitra-123"
-}
-```
-**Response** `201 Created`:
-```json
-{
-  "consentId": "cons-uuid-001",
-  "status": "GRANTED",
-  "grantedAt": "2026-02-20T11:49:06Z",
-  "expiresAt": "2027-02-20T00:00:00Z"
-}
-```
-
----
-
-### PUT `/consent/{consentId}/revoke`
-Revoke an existing consent.
-
-**Request**:
-```json
-{
-  "revokedByMitraId": "uuid-mitra-123",
-  "voiceConsentBase64": "<base64-wav-of-revocation>",
-  "reason": "CUSTOMER_REQUEST"
-}
-```
-**Response** `200 OK`:
-```json
-{
-  "consentId": "cons-uuid-001",
-  "status": "REVOKED",
-  "revokedAt": "2026-02-20T12:00:00Z",
-  "processingCompletedBy": "2026-02-23T12:00:00Z"
-}
-```
-
----
-
-## 6. Sync (Offline-First)
-
-### POST `/sync/batch`
-**Content-Type**: `application/x-protobuf`
-
-Upload a batch of locally queued operations to the server.
-
-**Request Body** (protobuf-serialized):
-```
-SyncBatchRequest {
-  mitraId: "uuid-mitra-123",
-  deviceId: "device-serial-xyz",
-  items: [
-    SyncItem {
-      clientIdempotencyKey: "client-uuid-001",
-      operationType: CREATE,
-      entityType: "LoanApplication",
-      payload: <protobuf-serialized LoanApplication>,
-      priority: 2,
-      createdAt: 1740045946000
+  "stores": [
+    {
+      "storeId": "STR-001",
+      "name": "Sachin Sports Hub",
+      "distance": "1.2 km",
+      "rating": 4.7,
+      "activeOffersCount": 3,
+      "address": "Shop 14, MG Road, Pune"
     }
   ]
 }
 ```
 
-**Response** `200 OK` (JSON):
+### GET /stores/{id}/offers
 ```json
+// Response 200 OK [PUBLIC]
 {
-  "sessionId": "sync-session-uuid",
-  "itemsReceived": 3,
-  "results": [
-    { "clientIdempotencyKey": "client-uuid-001", "status": "SYNCED", "serverId": "loan-uuid-001" },
-    { "clientIdempotencyKey": "client-uuid-002", "status": "CONFLICT", "resolution": "SERVER_WINS", "serverVersion": "<base64-entity>" }
-  ],
-  "syncedAt": "2026-02-20T11:55:00Z"
-}
-```
-
----
-
-### GET `/sync/pending-acknowledgements/{mitraId}`
-Fetch server-side updates the device hasn't received yet.
-
-**Response** `200 OK`:
-```json
-{
-  "updates": [
-    { "entityType": "LoanApplication", "entityId": "loan-uuid-001", "newStatus": "APPROVED", "updatedAt": "2026-02-20T11:50:00Z" }
+  "storeId": "STR-001",
+  "offers": [
+    {
+      "offerId": "OFF-202",
+      "title": "20% off Kookaburra bats",
+      "discountPercentage": 20.0,
+      "validUntil": "2024-03-31",
+      "redemptionsLeft": 63
+    }
   ]
 }
 ```
 
----
-
-## 7. Loan Workflow & Decisions
-
-### POST `/loans/{loanId}/decision`
-_Requires Credit Officer or Regional Manager role._
-
-**Request**:
+### POST /offers/{id}/redeem
 ```json
+// Response 200 OK
 {
-  "action": "APPROVE",
-  "approvedAmount": 35000,
-  "approvedTenureMonths": 12,
-  "reasonCode": "GOOD_ALT_DATA",
-  "notes": "Strong MGNREGA record and consistent utility payments."
-}
-```
-**Response** `200 OK`:
-```json
-{
-  "loanId": "loan-uuid-001",
-  "status": "APPROVED",
-  "approvedAt": "2026-02-20T13:05:00Z",
-  "disbursementExpectedBy": "2026-02-21T11:00:00Z"
+  "redemptionId": "RDM-8821",
+  "qrCode": "CZ-RDM-OFF202-U087-8821",
+  "qrCodeImageUrl": "cdn.criczone.in/qr/RDM-8821.png",
+  "expiresIn": "24 hours"
 }
 ```
 
 ---
 
-## 8. Notifications
+## 7. Sponsorship APIs
 
-### POST `/notifications/subscribe`
-Register Mitra device for push notifications.
-
-**Request**: `{ "mitraId": "uuid", "fcmToken": "...", "platform": "ANDROID" }`
-**Response** `204 No Content`
-
----
-
-## 9. Admin & Reporting
-
-### GET `/admin/mitras/{mitraId}/report`
-_Requires Admin or Compliance role._
-
-**Response** `200 OK`:
+### POST /sponsorships/requirements
 ```json
+// Request
 {
-  "mitraId": "uuid-mitra-123",
-  "period": "2026-02",
-  "applicationsSubmitted": 47,
-  "approvalRate": 0.83,
-  "averageCompletionTime": 13.4,
-  "npaRate": 0.021,
-  "syncFailures": 2,
-  "amlFlagsGenerated": 0
+  "tournamentId": "TRN-001",
+  "tiers": ["TITLE", "CO_SPONSOR"],
+  "expectedReach": 5000,
+  "description": "Looking for sponsors for Metro T20 Cup, 8 teams, 3-week tournament"
+}
+
+// Response 201 Created
+{ "requirementId": "REQ-001", "status": "MATCHING_IN_PROGRESS" }
+```
+
+### GET /sponsorships/{id}/roi
+```json
+// Response 200 OK
+{
+  "dealId": "SP-001",
+  "sponsor": "SportZone India",
+  "metrics": {
+    "matchViews": 12400,
+    "scorecardImpressions": 48000,
+    "fanReach": 3200,
+    "offerRedemptions": 127
+  },
+  "period": "2024-03-15 to 2024-03-31"
 }
 ```
 
 ---
 
-### GET `/admin/reports/rbi-quarterly`
-_Requires Compliance role._
+## 8. Community & Social APIs
 
-**Query Params**: `?quarter=2026Q1&format=json|xlsx`
+### GET /feed
+```json
+// Response 200 OK
+{
+  "posts": [
+    {
+      "postId": "PST-001",
+      "author": { "name": "Arjun Sharma", "photoUrl": "..." },
+      "type": "MATCH_SUMMARY",
+      "content": "Mumbai Stars won vs Andheri XI by 28 runs! 🏆",
+      "mediaUrl": null,
+      "likesCount": 142,
+      "commentsCount": 18,
+      "createdAt": "2024-03-17T18:45:00Z"
+    }
+  ],
+  "nextCursor": "eyJwYWdlIjoy..."
+}
+```
 
-**Response** `200 OK` or redirect to pre-signed S3 URL for xlsx export.
+### POST /posts
+```json
+// Request
+{
+  "type": "TEXT",
+  "content": "What a match yesterday! Arjun's 50 was incredible 🏏 #MetroT20Cup",
+  "mediaUrl": null
+}
+
+// Response 201 Created
+{ "postId": "PST-002", "status": "PUBLISHED" }
+```
 
 ---
 
-**Last Updated**: February 2026
-**Version**: 1.0
-**Status**: Design Complete
+## Error Response Format
+
+All error responses follow this structure:
+
+```json
+{
+  "error": "ERROR_CODE",
+  "message": "Human-readable description",
+  "timestamp": "2024-03-01T10:00:00Z",
+  "traceId": "abc-123-xyz"
+}
+```
+
+| HTTP Status | Error Code | Description |
+|-------------|------------|-------------|
+| 400 | `INVALID_REQUEST` | Missing or invalid request body |
+| 401 | `UNAUTHORIZED` | JWT missing or expired |
+| 403 | `FORBIDDEN` | JWT valid but role not permitted |
+| 404 | `NOT_FOUND` | Resource does not exist |
+| 409 | `CONFLICT` | Slot already booked, OTP already used |
+| 422 | `VALIDATION_FAILED` | Business rule violation (e.g., over limit exceeded) |
+| 429 | `RATE_LIMITED` | Too many requests (applies to /auth/* endpoints) |
+| 500 | `INTERNAL_ERROR` | Server-side error — include traceId in support requests |
