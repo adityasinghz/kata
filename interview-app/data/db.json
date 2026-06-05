@@ -1,0 +1,660 @@
+{
+  "interviews": [
+    {
+      "id": "INT-20260605-1001",
+      "role": "Junior Backend Engineer",
+      "level": "JUNIOR",
+      "skills": [
+        "Node.js"
+      ],
+      "jdText": "",
+      "resumeText": "",
+      "candidateName": "Aditya",
+      "createdBy": "Hiring Manager",
+      "status": "IN_PROGRESS",
+      "questionCount": 15,
+      "responseCount": 3,
+      "progress": 20,
+      "coverageMap": {
+        "TECHNICAL": 0,
+        "BEHAVIORAL": 0,
+        "PROBLEM_SOLVING": 0,
+        "SYSTEM_DESIGN": 0
+      },
+      "createdAt": "2026-06-05T07:30:27.676Z",
+      "startedAt": null,
+      "completedAt": null,
+      "scores": null,
+      "review": null,
+      "questions": [
+        {
+          "id": "Q-001",
+          "category": "TECHNICAL",
+          "text": "Can you explain the virtual DOM and how it works in React?",
+          "sequence": 1,
+          "source": "GENERAL",
+          "depthTarget": "FOUNDATIONAL",
+          "skillTags": [
+            "React"
+          ],
+          "isActive": true
+        },
+        {
+          "id": "Q-002",
+          "category": "TECHNICAL",
+          "text": "What are hooks in React, and how do they differ from class components?",
+          "sequence": 2,
+          "source": "GENERAL",
+          "depthTarget": "APPLIED",
+          "skillTags": [
+            "React"
+          ],
+          "isActive": true
+        },
+        {
+          "id": "Q-003",
+          "category": "TECHNICAL",
+          "text": "How do you manage state in a React application? Can you compare local state management with global state management?",
+          "sequence": 3,
+          "source": "GENERAL",
+          "depthTarget": "APPLIED",
+          "skillTags": [
+            "React"
+          ],
+          "isActive": true
+        },
+        {
+          "id": "Q-004",
+          "category": "TECHNICAL",
+          "text": "What is the purpose of keys in React lists, and how do they help with performance?",
+          "sequence": 4,
+          "source": "GENERAL",
+          "depthTarget": "FOUNDATIONAL",
+          "skillTags": [
+            "React"
+          ],
+          "isActive": true
+        },
+        {
+          "id": "Q-005",
+          "category": "BEHAVIORAL",
+          "text": "Describe a challenging project you worked on using React. What were the challenges, and how did you overcome them?",
+          "sequence": 5,
+          "source": "GENERAL",
+          "depthTarget": "APPLIED",
+          "skillTags": [
+            "React"
+          ],
+          "isActive": true
+        },
+        {
+          "id": "Q-006",
+          "category": "BEHAVIORAL",
+          "text": "How do you prioritize tasks when working on multiple features in a React application?",
+          "sequence": 6,
+          "source": "GENERAL",
+          "depthTarget": "FOUNDATIONAL",
+          "skillTags": [
+            "React"
+          ],
+          "isActive": true
+        },
+        {
+          "id": "Q-007",
+          "category": "PROBLEM_SOLVING",
+          "text": "You have a React application that is experiencing performance issues. What steps would you take to identify and resolve these issues?",
+          "sequence": 7,
+          "source": "GENERAL",
+          "depthTarget": "DEEP",
+          "skillTags": [
+            "React"
+          ],
+          "isActive": true
+        },
+        {
+          "id": "Q-008",
+          "category": "PROBLEM_SOLVING",
+          "text": "How would you approach debugging a React component that is not rendering as expected?",
+          "sequence": 8,
+          "source": "GENERAL",
+          "depthTarget": "APPLIED",
+          "skillTags": [
+            "React"
+          ],
+          "isActive": true
+        },
+        {
+          "id": "Q-009",
+          "category": "SYSTEM_DESIGN",
+          "text": "Design a simple React application that allows users to create, read, update, and delete (CRUD) items. What components would you create, and how would you structure the application?",
+          "sequence": 9,
+          "source": "GENERAL",
+          "depthTarget": "DEEP",
+          "skillTags": [
+            "React"
+          ],
+          "isActive": true
+        },
+        {
+          "id": "Q-010",
+          "category": "SYSTEM_DESIGN",
+          "text": "How would you architect a scalable React application that needs to handle a large amount of user data? What considerations would you take into account?",
+          "sequence": 10,
+          "source": "GENERAL",
+          "depthTarget": "DEEP",
+          "skillTags": [
+            "React"
+          ],
+          "isActive": true
+        },
+        {
+          "id": "Q-011",
+          "category": "TECHNICAL",
+          "text": "What are some common performance optimization techniques you can apply in a React application?",
+          "sequence": 11,
+          "source": "GENERAL",
+          "depthTarget": "APPLIED",
+          "skillTags": [
+            "React"
+          ],
+          "isActive": true
+        },
+        {
+          "id": "Q-012",
+          "category": "TECHNICAL",
+          "text": "Can you explain the concept of higher-order components (HOCs) in React?",
+          "sequence": 12,
+          "source": "GENERAL",
+          "depthTarget": "APPLIED",
+          "skillTags": [
+            "React"
+          ],
+          "isActive": true
+        },
+        {
+          "id": "Q-013",
+          "category": "BEHAVIORAL",
+          "text": "Tell me about a time when you had to work with a team to implement a feature in React. What was your role, and how did you ensure effective collaboration?",
+          "sequence": 13,
+          "source": "GENERAL",
+          "depthTarget": "APPLIED",
+          "skillTags": [
+            "React"
+          ],
+          "isActive": true
+        },
+        {
+          "id": "Q-014",
+          "category": "PROBLEM_SOLVING",
+          "text": "If you encounter a situation where a third-party library is causing issues in your React app, how would you handle it?",
+          "sequence": 14,
+          "source": "GENERAL",
+          "depthTarget": "APPLIED",
+          "skillTags": [
+            "React"
+          ],
+          "isActive": true
+        },
+        {
+          "id": "Q-015",
+          "category": "SYSTEM_DESIGN",
+          "text": "How would you implement authentication in a React application? What libraries or techniques would you use?",
+          "sequence": 15,
+          "source": "GENERAL",
+          "depthTarget": "DEEP",
+          "skillTags": [
+            "React"
+          ],
+          "isActive": true
+        }
+      ],
+      "responses": [
+        {
+          "questionId": "Q-001",
+          "candidateText": "it's JS",
+          "responseTimeSec": 12,
+          "depthScore": 1,
+          "dimensions": {
+            "technicalDepth": {
+              "score": 1,
+              "rationale": "The candidate's response lacks any technical detail or explanation of the virtual DOM, which is a fundamental concept in React."
+            },
+            "communication": {
+              "score": 2,
+              "rationale": "The response is very brief and does not effectively communicate any understanding of the topic."
+            },
+            "problemSolving": {
+              "score": 1,
+              "rationale": "There is no demonstration of problem-solving skills as the response does not address the question."
+            },
+            "roleAlignment": {
+              "score": 1,
+              "rationale": "The response does not align with the expectations for a role that requires knowledge of React and its concepts."
+            }
+          },
+          "action": "FOLLOW_UP_EASIER",
+          "nextQuestionText": "What do you know about how React manages state?"
+        },
+        {
+          "questionId": "Q-002",
+          "candidateText": "by hooks",
+          "responseTimeSec": 31,
+          "depthScore": 1,
+          "dimensions": {
+            "technicalDepth": {
+              "score": 2,
+              "rationale": "The candidate mentioned 'hooks' but did not elaborate on how React manages state with hooks or other methods."
+            },
+            "communication": {
+              "score": 3,
+              "rationale": "The response is very brief and lacks clarity or detail, making it difficult to understand the candidate's knowledge."
+            },
+            "problemSolving": {
+              "score": 1,
+              "rationale": "There is no demonstration of problem-solving skills or application of knowledge in the response."
+            },
+            "roleAlignment": {
+              "score": 2,
+              "rationale": "The response does not align well with the expectations for a technical role that requires a deeper understanding of state management in React."
+            }
+          },
+          "action": "FOLLOW_UP_EASIER",
+          "nextQuestionText": "Can you explain what hooks are and how they are used to manage state in React?"
+        },
+        {
+          "questionId": "Q-003",
+          "candidateText": "used for react life cycle",
+          "responseTimeSec": 67,
+          "depthScore": 1,
+          "dimensions": {
+            "technicalDepth": {
+              "score": 2,
+              "rationale": "The candidate's response is very vague and does not accurately describe what hooks are or how they manage state in React."
+            },
+            "communication": {
+              "score": 3,
+              "rationale": "The response is unclear and lacks detail, making it difficult to understand the candidate's knowledge."
+            },
+            "problemSolving": {
+              "score": 1,
+              "rationale": "There is no demonstration of problem-solving skills in the response."
+            },
+            "roleAlignment": {
+              "score": 2,
+              "rationale": "The response does not align well with the expectations for a technical role that requires knowledge of React."
+            }
+          },
+          "action": "FOLLOW_UP_EASIER",
+          "nextQuestionText": "What are some common hooks in React and how do they differ from each other?"
+        }
+      ],
+      "costRecord": {
+        "totalInputTokens": 2992,
+        "totalOutputTokens": 4838,
+        "totalCostUsd": 0.0033516,
+        "modelUsed": "gemini-2.0-flash",
+        "totalApiCalls": 8,
+        "avgLatencyMs": 0,
+        "breakdown": [
+          {
+            "agent": "question_generator",
+            "inputTokens": 1566,
+            "outputTokens": 4231,
+            "cost": 0.0027735000000000004,
+            "calls": 5
+          },
+          {
+            "agent": "response_evaluator",
+            "inputTokens": 1426,
+            "outputTokens": 607,
+            "cost": 0.0005781,
+            "calls": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "INT-20260605-1001",
+      "role": "Junior Backend Engineer",
+      "level": "JUNIOR",
+      "skills": [
+        "Node.js"
+      ],
+      "jdText": "",
+      "resumeText": "",
+      "candidateName": "Aditya",
+      "createdBy": "Hiring Manager",
+      "status": "DRAFT",
+      "questionCount": 0,
+      "responseCount": 0,
+      "progress": 0,
+      "coverageMap": {
+        "TECHNICAL": 0,
+        "BEHAVIORAL": 0,
+        "PROBLEM_SOLVING": 0,
+        "SYSTEM_DESIGN": 0
+      },
+      "createdAt": "2026-06-05T07:31:24.844Z",
+      "startedAt": null,
+      "completedAt": null,
+      "scores": null,
+      "review": null,
+      "questions": [],
+      "responses": [],
+      "costRecord": {
+        "totalInputTokens": 0,
+        "totalOutputTokens": 0,
+        "totalCostUsd": 0,
+        "modelUsed": "gemini-2.0-flash",
+        "totalApiCalls": 0,
+        "avgLatencyMs": 0,
+        "breakdown": []
+      }
+    },
+    {
+      "id": "INT-20260605-1001",
+      "role": "Junior Backend Engineer",
+      "level": "MID",
+      "skills": [
+        "Node.js"
+      ],
+      "jdText": "",
+      "resumeText": "",
+      "candidateName": "aa",
+      "createdBy": "Hiring Manager",
+      "status": "DRAFT",
+      "questionCount": 0,
+      "responseCount": 0,
+      "progress": 0,
+      "coverageMap": {
+        "TECHNICAL": 0,
+        "BEHAVIORAL": 0,
+        "PROBLEM_SOLVING": 0,
+        "SYSTEM_DESIGN": 0
+      },
+      "createdAt": "2026-06-05T07:34:18.029Z",
+      "startedAt": null,
+      "completedAt": null,
+      "scores": null,
+      "review": null,
+      "questions": [],
+      "responses": [],
+      "costRecord": {
+        "totalInputTokens": 0,
+        "totalOutputTokens": 0,
+        "totalCostUsd": 0,
+        "modelUsed": "gpt-4o-mini",
+        "totalApiCalls": 0,
+        "avgLatencyMs": 0,
+        "breakdown": []
+      }
+    },
+    {
+      "id": "INT-20260605-1001",
+      "role": "Junior Backend Engineer",
+      "level": "MID",
+      "skills": [
+        "Node.js"
+      ],
+      "jdText": "",
+      "resumeText": "",
+      "candidateName": "Aditya",
+      "createdBy": "Hiring Manager",
+      "status": "DRAFT",
+      "questionCount": 0,
+      "responseCount": 0,
+      "progress": 0,
+      "coverageMap": {
+        "TECHNICAL": 0,
+        "BEHAVIORAL": 0,
+        "PROBLEM_SOLVING": 0,
+        "SYSTEM_DESIGN": 0
+      },
+      "createdAt": "2026-06-05T07:35:36.312Z",
+      "startedAt": null,
+      "completedAt": null,
+      "scores": null,
+      "review": null,
+      "questions": [],
+      "responses": [],
+      "costRecord": {
+        "totalInputTokens": 0,
+        "totalOutputTokens": 0,
+        "totalCostUsd": 0,
+        "modelUsed": "gpt-4o-mini",
+        "totalApiCalls": 0,
+        "avgLatencyMs": 0,
+        "breakdown": []
+      }
+    },
+    {
+      "id": "INT-20260605-1001",
+      "role": "Junior Backend Engineer",
+      "level": "MID",
+      "skills": [
+        "Node.js"
+      ],
+      "jdText": "",
+      "resumeText": "",
+      "candidateName": "Aditya Singh",
+      "createdBy": "Hiring Manager",
+      "status": "DRAFT",
+      "questionCount": 0,
+      "responseCount": 0,
+      "progress": 0,
+      "coverageMap": {
+        "TECHNICAL": 0,
+        "BEHAVIORAL": 0,
+        "PROBLEM_SOLVING": 0,
+        "SYSTEM_DESIGN": 0
+      },
+      "createdAt": "2026-06-05T07:37:29.660Z",
+      "startedAt": null,
+      "completedAt": null,
+      "scores": null,
+      "review": null,
+      "questions": [],
+      "responses": [],
+      "costRecord": {
+        "totalInputTokens": 0,
+        "totalOutputTokens": 0,
+        "totalCostUsd": 0,
+        "modelUsed": "gpt-4o-mini",
+        "totalApiCalls": 0,
+        "avgLatencyMs": 0,
+        "breakdown": []
+      }
+    },
+    {
+      "id": "INT-20260605-1001",
+      "role": "Junior Backend Engineer",
+      "level": "JUNIOR",
+      "skills": [
+        "Node.js"
+      ],
+      "jdText": "",
+      "resumeText": "",
+      "candidateName": "Aditya Singh",
+      "createdBy": "Hiring Manager",
+      "status": "DRAFT",
+      "questionCount": 0,
+      "responseCount": 0,
+      "progress": 0,
+      "coverageMap": {
+        "TECHNICAL": 0,
+        "BEHAVIORAL": 0,
+        "PROBLEM_SOLVING": 0,
+        "SYSTEM_DESIGN": 0
+      },
+      "createdAt": "2026-06-05T07:39:56.172Z",
+      "startedAt": null,
+      "completedAt": null,
+      "scores": null,
+      "review": null,
+      "questions": [],
+      "responses": [],
+      "costRecord": {
+        "totalInputTokens": 0,
+        "totalOutputTokens": 0,
+        "totalCostUsd": 0,
+        "modelUsed": "gpt-4o-mini",
+        "totalApiCalls": 0,
+        "avgLatencyMs": 0,
+        "breakdown": []
+      }
+    },
+    {
+      "id": "INT-20260605-1001",
+      "role": "Mid Backend Engineer",
+      "level": "MID",
+      "skills": [
+        "React"
+      ],
+      "jdText": "",
+      "resumeText": "",
+      "candidateName": "Aditya Singh",
+      "createdBy": "Hiring Manager",
+      "status": "DRAFT",
+      "questionCount": 0,
+      "responseCount": 0,
+      "progress": 0,
+      "coverageMap": {
+        "TECHNICAL": 0,
+        "BEHAVIORAL": 0,
+        "PROBLEM_SOLVING": 0,
+        "SYSTEM_DESIGN": 0
+      },
+      "createdAt": "2026-06-05T07:41:11.642Z",
+      "startedAt": null,
+      "completedAt": null,
+      "scores": null,
+      "review": null,
+      "questions": [],
+      "responses": [],
+      "costRecord": {
+        "totalInputTokens": 0,
+        "totalOutputTokens": 0,
+        "totalCostUsd": 0,
+        "modelUsed": "gpt-4o-mini",
+        "totalApiCalls": 0,
+        "avgLatencyMs": 0,
+        "breakdown": []
+      }
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "AL-20260605-1001",
+      "interviewId": "INT-20260605-1001",
+      "agentName": "question_generator",
+      "operation": "GENERATE_QUESTIONS",
+      "promptText": "You are an expert technical interviewer acting as a Question Generator Agent. \nYour goal is to generate an interview question bank for a candidate applying for the MID Junior Backend Engineer position.\nRequired Skills: Node.js\n\nGuidelines:\n1. Generate between 10 and 15 questions.\n2. Questions must span these categories: TECHNICAL, BEHAVIORAL, PROBLEM_SOLVING, SYSTEM_DESIGN.\n3. For MID roles, adjust the depthTarget appropriately (FOUNDATIONAL, APPLIED, DEEP).\n4. If Job Description (JD) or Resume is provided, tailor questions to them.\n\n\nGenerate the interview question bank.\nJob Description: None provided\nCandidate Resume: None provided\n",
+      "responseText": "{\"questions\":[{\"id\":\"Q-001\",\"category\":\"TECHNICAL\",\"text\":\"What is Node.js and how does it differ from traditional server-side technologies?\",\"sequence\":1,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-002\",\"category\":\"TECHNICAL\",\"text\":\"Can you explain the event-driven architecture of Node.js and how it handles asynchronous operations?\",\"sequence\":2,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-003\",\"category\":\"TECHNICAL\",\"text\":\"What are middleware functions in Express.js and how do you use them?\",\"sequence\":3,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\",\"Express.js\"]},{\"id\":\"Q-004\",\"category\":\"TECHNICAL\",\"text\":\"How do you manage dependencies in a Node.js application?\",\"sequence\":4,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-005\",\"category\":\"PROBLEM_SOLVING\",\"text\":\"You have a Node.js application that is experiencing performance issues. What steps would you take to diagnose and resolve these issues?\",\"sequence\":5,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-006\",\"category\":\"PROBLEM_SOLVING\",\"text\":\"Describe a challenging bug you encountered in a Node.js application. How did you approach fixing it?\",\"sequence\":6,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-007\",\"category\":\"BEHAVIORAL\",\"text\":\"Tell me about a time when you had to work in a team to complete a project. What role did you play and what was the outcome?\",\"sequence\":7,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[]},{\"id\":\"Q-008\",\"category\":\"BEHAVIORAL\",\"text\":\"How do you prioritize tasks when working on multiple projects simultaneously?\",\"sequence\":8,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[]},{\"id\":\"Q-009\",\"category\":\"SYSTEM_DESIGN\",\"text\":\"Design a simple RESTful API using Node.js. What considerations would you take into account for scalability and security?\",\"sequence\":9,\"source\":\"GENERAL\",\"depthTarget\":\"DEEP\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-010\",\"category\":\"SYSTEM_DESIGN\",\"text\":\"How would you structure a Node.js application for a large-scale project? What patterns or practices would you follow?\",\"sequence\":10,\"source\":\"GENERAL\",\"depthTarget\":\"DEEP\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-011\",\"category\":\"TECHNICAL\",\"text\":\"What is the purpose of the package.json file in a Node.js project?\",\"sequence\":11,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-012\",\"category\":\"TECHNICAL\",\"text\":\"Explain the concept of callbacks in Node.js. How do they differ from promises and async/await?\",\"sequence\":12,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-013\",\"category\":\"PROBLEM_SOLVING\",\"text\":\"You need to implement user authentication in a Node.js application. What approach would you take?\",\"sequence\":13,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-014\",\"category\":\"BEHAVIORAL\",\"text\":\"Describe a situation where you had to learn a new technology quickly. How did you approach it?\",\"sequence\":14,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[]},{\"id\":\"Q-015\",\"category\":\"SYSTEM_DESIGN\",\"text\":\"How would you implement real-time communication in a Node.js application? What technologies would you use?\",\"sequence\":15,\"source\":\"GENERAL\",\"depthTarget\":\"DEEP\",\"skillTags\":[\"Node.js\"]}]}",
+      "inputTokens": 313,
+      "outputTokens": 824,
+      "costUsd": 0.00054135,
+      "latencyMs": 14281,
+      "modelUsed": "gpt-4o-mini",
+      "createdAt": "2026-06-05T07:34:32.316Z"
+    },
+    {
+      "id": "AL-20260605-1001",
+      "interviewId": "INT-20260605-1001",
+      "agentName": "question_generator",
+      "operation": "GENERATE_QUESTIONS",
+      "promptText": "You are an expert technical interviewer acting as a Question Generator Agent. \nYour goal is to generate an interview question bank for a candidate applying for the MID Junior Backend Engineer position.\nRequired Skills: Node.js\n\nGuidelines:\n1. Generate between 10 and 15 questions.\n2. Questions must span these categories: TECHNICAL, BEHAVIORAL, PROBLEM_SOLVING, SYSTEM_DESIGN.\n3. For MID roles, adjust the depthTarget appropriately (FOUNDATIONAL, APPLIED, DEEP).\n4. If Job Description (JD) or Resume is provided, tailor questions to them.\n\n\nGenerate the interview question bank.\nJob Description: None provided\nCandidate Resume: None provided\n",
+      "responseText": "{\"questions\":[{\"id\":\"Q-001\",\"category\":\"TECHNICAL\",\"text\":\"What is Node.js and how does it differ from traditional server-side technologies?\",\"sequence\":1,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-002\",\"category\":\"TECHNICAL\",\"text\":\"Can you explain the event-driven architecture of Node.js? How does it handle asynchronous operations?\",\"sequence\":2,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-003\",\"category\":\"TECHNICAL\",\"text\":\"What are some common modules in Node.js, and how do you use them in your applications?\",\"sequence\":3,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-004\",\"category\":\"TECHNICAL\",\"text\":\"How do you manage dependencies in a Node.js project? Can you explain the role of package.json?\",\"sequence\":4,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-005\",\"category\":\"PROBLEM_SOLVING\",\"text\":\"You are tasked with building a RESTful API using Node.js. What steps would you take to ensure it is scalable and maintainable?\",\"sequence\":5,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-006\",\"category\":\"PROBLEM_SOLVING\",\"text\":\"How would you handle error management in a Node.js application? Can you provide an example of a strategy you would use?\",\"sequence\":6,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-007\",\"category\":\"SYSTEM_DESIGN\",\"text\":\"Design a simple chat application using Node.js. What components would you include, and how would they interact?\",\"sequence\":7,\"source\":\"GENERAL\",\"depthTarget\":\"DEEP\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-008\",\"category\":\"SYSTEM_DESIGN\",\"text\":\"How would you design a microservices architecture using Node.js? What considerations would you take into account for communication between services?\",\"sequence\":8,\"source\":\"GENERAL\",\"depthTarget\":\"DEEP\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-009\",\"category\":\"BEHAVIORAL\",\"text\":\"Describe a challenging project you worked on using Node.js. What obstacles did you face and how did you overcome them?\",\"sequence\":9,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-010\",\"category\":\"BEHAVIORAL\",\"text\":\"How do you prioritize tasks when working on multiple projects? Can you give an example from your past experience?\",\"sequence\":10,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-011\",\"category\":\"BEHAVIORAL\",\"text\":\"Tell me about a time when you had to learn a new technology quickly. How did you approach it?\",\"sequence\":11,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-012\",\"category\":\"PROBLEM_SOLVING\",\"text\":\"Imagine you have a performance issue in your Node.js application. What steps would you take to diagnose and resolve the issue?\",\"sequence\":12,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-013\",\"category\":\"TECHNICAL\",\"text\":\"What is middleware in Node.js? Can you provide an example of how you would use middleware in an Express application?\",\"sequence\":13,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-014\",\"category\":\"SYSTEM_DESIGN\",\"text\":\"How would you implement user authentication in a Node.js application? What libraries or frameworks would you consider?\",\"sequence\":14,\"source\":\"GENERAL\",\"depthTarget\":\"DEEP\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-015\",\"category\":\"BEHAVIORAL\",\"text\":\"How do you stay updated with the latest developments in Node.js and backend technologies?\",\"sequence\":15,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\"]}]}",
+      "inputTokens": 313,
+      "outputTokens": 871,
+      "costUsd": 0.00056955,
+      "latencyMs": 13510,
+      "modelUsed": "gpt-4o-mini",
+      "createdAt": "2026-06-05T07:35:49.827Z"
+    },
+    {
+      "id": "AL-20260605-1001",
+      "interviewId": "INT-20260605-1001",
+      "agentName": "question_generator",
+      "operation": "GENERATE_QUESTIONS",
+      "promptText": "You are an expert technical interviewer acting as a Question Generator Agent. \nYour goal is to generate an interview question bank for a candidate applying for the MID Junior Backend Engineer position.\nRequired Skills: Node.js\n\nGuidelines:\n1. Generate between 10 and 15 questions.\n2. Questions must span these categories: TECHNICAL, BEHAVIORAL, PROBLEM_SOLVING, SYSTEM_DESIGN.\n3. For MID roles, adjust the depthTarget appropriately (FOUNDATIONAL, APPLIED, DEEP).\n4. If Job Description (JD) or Resume is provided, tailor questions to them.\n\n\nGenerate the interview question bank.\nJob Description: None provided\nCandidate Resume: None provided\n",
+      "responseText": "{\"questions\":[{\"id\":\"Q-001\",\"category\":\"TECHNICAL\",\"text\":\"What is Node.js and how does it differ from traditional web server technologies?\",\"sequence\":1,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-002\",\"category\":\"TECHNICAL\",\"text\":\"Can you explain the event-driven architecture of Node.js and how it handles asynchronous operations?\",\"sequence\":2,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-003\",\"category\":\"TECHNICAL\",\"text\":\"What are middleware functions in Express.js and how do you use them in a Node.js application?\",\"sequence\":3,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\",\"Express.js\"]},{\"id\":\"Q-004\",\"category\":\"TECHNICAL\",\"text\":\"How do you manage packages in a Node.js application? Can you explain the role of npm?\",\"sequence\":4,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\",\"npm\"]},{\"id\":\"Q-005\",\"category\":\"PROBLEM_SOLVING\",\"text\":\"Given a scenario where a Node.js application is experiencing high latency, what steps would you take to diagnose and resolve the issue?\",\"sequence\":5,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-006\",\"category\":\"PROBLEM_SOLVING\",\"text\":\"How would you implement error handling in a Node.js application? Can you provide an example?\",\"sequence\":6,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-007\",\"category\":\"SYSTEM_DESIGN\",\"text\":\"Design a simple RESTful API using Node.js. What considerations would you take into account for scalability and security?\",\"sequence\":7,\"source\":\"GENERAL\",\"depthTarget\":\"DEEP\",\"skillTags\":[\"Node.js\",\"REST API\"]},{\"id\":\"Q-008\",\"category\":\"SYSTEM_DESIGN\",\"text\":\"How would you structure a Node.js application for maintainability and scalability? What folder structure would you use?\",\"sequence\":8,\"source\":\"GENERAL\",\"depthTarget\":\"DEEP\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-009\",\"category\":\"BEHAVIORAL\",\"text\":\"Describe a challenging project you worked on using Node.js. What were the challenges and how did you overcome them?\",\"sequence\":9,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-010\",\"category\":\"BEHAVIORAL\",\"text\":\"How do you prioritize tasks when working on multiple projects simultaneously?\",\"sequence\":10,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[]},{\"id\":\"Q-011\",\"category\":\"BEHAVIORAL\",\"text\":\"Can you give an example of a time you received constructive criticism? How did you respond to it?\",\"sequence\":11,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[]},{\"id\":\"Q-012\",\"category\":\"PROBLEM_SOLVING\",\"text\":\"If you were to optimize a Node.js application for performance, what tools or techniques would you use?\",\"sequence\":12,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-013\",\"category\":\"SYSTEM_DESIGN\",\"text\":\"How would you implement user authentication in a Node.js application? What libraries or frameworks would you consider?\",\"sequence\":13,\"source\":\"GENERAL\",\"depthTarget\":\"DEEP\",\"skillTags\":[\"Node.js\",\"Authentication\"]},{\"id\":\"Q-014\",\"category\":\"TECHNICAL\",\"text\":\"What is the purpose of the 'package.json' file in a Node.js project?\",\"sequence\":14,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-015\",\"category\":\"TECHNICAL\",\"text\":\"Explain the concept of Promises in JavaScript and how they are used in Node.js for asynchronous programming.\",\"sequence\":15,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\",\"JavaScript\"]}]}",
+      "inputTokens": 313,
+      "outputTokens": 848,
+      "costUsd": 0.00055575,
+      "latencyMs": 15794,
+      "modelUsed": "gpt-4o-mini",
+      "createdAt": "2026-06-05T07:37:45.460Z"
+    },
+    {
+      "id": "AL-20260605-1001",
+      "interviewId": "INT-20260605-1001",
+      "agentName": "question_generator",
+      "operation": "GENERATE_QUESTIONS",
+      "promptText": "You are an expert technical interviewer acting as a Question Generator Agent. \nYour goal is to generate an interview question bank for a candidate applying for the JUNIOR Junior Backend Engineer position.\nRequired Skills: Node.js\n\nGuidelines:\n1. Generate between 10 and 15 questions.\n2. Questions must span these categories: TECHNICAL, BEHAVIORAL, PROBLEM_SOLVING, SYSTEM_DESIGN.\n3. For JUNIOR roles, adjust the depthTarget appropriately (FOUNDATIONAL, APPLIED, DEEP).\n4. If Job Description (JD) or Resume is provided, tailor questions to them.\n\n\nGenerate the interview question bank.\nJob Description: None provided\nCandidate Resume: None provided\n",
+      "responseText": "{\"questions\":[{\"id\":\"Q-001\",\"category\":\"TECHNICAL\",\"text\":\"What is Node.js and how does it differ from traditional web server technologies?\",\"sequence\":1,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-002\",\"category\":\"TECHNICAL\",\"text\":\"Can you explain the event-driven architecture of Node.js? How does it handle asynchronous operations?\",\"sequence\":2,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-003\",\"category\":\"TECHNICAL\",\"text\":\"What are some common modules in Node.js that you have used? Can you describe their functionalities?\",\"sequence\":3,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-004\",\"category\":\"TECHNICAL\",\"text\":\"How do you manage dependencies in a Node.js project? What is the purpose of package.json?\",\"sequence\":4,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-005\",\"category\":\"BEHAVIORAL\",\"text\":\"Describe a time when you faced a challenge while working on a Node.js project. How did you overcome it?\",\"sequence\":5,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-006\",\"category\":\"BEHAVIORAL\",\"text\":\"How do you prioritize your tasks when working on multiple projects?\",\"sequence\":6,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-007\",\"category\":\"PROBLEM_SOLVING\",\"text\":\"You need to create a simple RESTful API using Node.js. What steps would you take to implement this?\",\"sequence\":7,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-008\",\"category\":\"PROBLEM_SOLVING\",\"text\":\"How would you handle errors in a Node.js application? Can you provide an example?\",\"sequence\":8,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-009\",\"category\":\"SYSTEM_DESIGN\",\"text\":\"If you were to design a simple chat application using Node.js, what components would you include and how would they interact?\",\"sequence\":9,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-010\",\"category\":\"SYSTEM_DESIGN\",\"text\":\"How would you design a logging system for a Node.js application? What factors would you consider?\",\"sequence\":10,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-011\",\"category\":\"TECHNICAL\",\"text\":\"What is middleware in Express.js and how do you use it?\",\"sequence\":11,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\",\"Express.js\"]},{\"id\":\"Q-012\",\"category\":\"TECHNICAL\",\"text\":\"Can you explain the concept of Promises in JavaScript and how they are used in Node.js?\",\"sequence\":12,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\",\"JavaScript\"]},{\"id\":\"Q-013\",\"category\":\"BEHAVIORAL\",\"text\":\"Tell me about a time when you had to learn a new technology quickly. How did you approach it?\",\"sequence\":13,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-014\",\"category\":\"PROBLEM_SOLVING\",\"text\":\"Imagine you have a performance issue in your Node.js application. What steps would you take to diagnose and resolve it?\",\"sequence\":14,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]},{\"id\":\"Q-015\",\"category\":\"SYSTEM_DESIGN\",\"text\":\"What considerations would you take into account when scaling a Node.js application?\",\"sequence\":15,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"Node.js\"]}]}",
+      "inputTokens": 315,
+      "outputTokens": 838,
+      "costUsd": 0.00055005,
+      "latencyMs": 15938,
+      "modelUsed": "gpt-4o-mini",
+      "createdAt": "2026-06-05T07:40:12.116Z"
+    },
+    {
+      "id": "AL-20260605-1001",
+      "interviewId": "INT-20260605-1001",
+      "agentName": "question_generator",
+      "operation": "GENERATE_QUESTIONS",
+      "promptText": "You are an expert technical interviewer acting as a Question Generator Agent. \nYour goal is to generate an interview question bank for a candidate applying for the MID Mid Backend Engineer position.\nRequired Skills: React\n\nGuidelines:\n1. Generate between 10 and 15 questions.\n2. Questions must span these categories: TECHNICAL, BEHAVIORAL, PROBLEM_SOLVING, SYSTEM_DESIGN.\n3. For MID roles, adjust the depthTarget appropriately (FOUNDATIONAL, APPLIED, DEEP).\n4. If Job Description (JD) or Resume is provided, tailor questions to them.\n\n\nGenerate the interview question bank.\nJob Description: None provided\nCandidate Resume: None provided\n",
+      "responseText": "{\"questions\":[{\"id\":\"Q-001\",\"category\":\"TECHNICAL\",\"text\":\"Can you explain the virtual DOM and how it works in React?\",\"sequence\":1,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"React\"]},{\"id\":\"Q-002\",\"category\":\"TECHNICAL\",\"text\":\"What are hooks in React, and how do they differ from class components?\",\"sequence\":2,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"React\"]},{\"id\":\"Q-003\",\"category\":\"TECHNICAL\",\"text\":\"How do you manage state in a React application? Can you compare local state management with global state management?\",\"sequence\":3,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"React\"]},{\"id\":\"Q-004\",\"category\":\"TECHNICAL\",\"text\":\"What is the purpose of keys in React lists, and how do they help with performance?\",\"sequence\":4,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"React\"]},{\"id\":\"Q-005\",\"category\":\"BEHAVIORAL\",\"text\":\"Describe a challenging project you worked on using React. What were the challenges, and how did you overcome them?\",\"sequence\":5,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"React\"]},{\"id\":\"Q-006\",\"category\":\"BEHAVIORAL\",\"text\":\"How do you prioritize tasks when working on multiple features in a React application?\",\"sequence\":6,\"source\":\"GENERAL\",\"depthTarget\":\"FOUNDATIONAL\",\"skillTags\":[\"React\"]},{\"id\":\"Q-007\",\"category\":\"PROBLEM_SOLVING\",\"text\":\"You have a React application that is experiencing performance issues. What steps would you take to identify and resolve these issues?\",\"sequence\":7,\"source\":\"GENERAL\",\"depthTarget\":\"DEEP\",\"skillTags\":[\"React\"]},{\"id\":\"Q-008\",\"category\":\"PROBLEM_SOLVING\",\"text\":\"How would you approach debugging a React component that is not rendering as expected?\",\"sequence\":8,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"React\"]},{\"id\":\"Q-009\",\"category\":\"SYSTEM_DESIGN\",\"text\":\"Design a simple React application that allows users to create, read, update, and delete (CRUD) items. What components would you create, and how would you structure the application?\",\"sequence\":9,\"source\":\"GENERAL\",\"depthTarget\":\"DEEP\",\"skillTags\":[\"React\"]},{\"id\":\"Q-010\",\"category\":\"SYSTEM_DESIGN\",\"text\":\"How would you architect a scalable React application that needs to handle a large amount of user data? What considerations would you take into account?\",\"sequence\":10,\"source\":\"GENERAL\",\"depthTarget\":\"DEEP\",\"skillTags\":[\"React\"]},{\"id\":\"Q-011\",\"category\":\"TECHNICAL\",\"text\":\"What are some common performance optimization techniques you can apply in a React application?\",\"sequence\":11,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"React\"]},{\"id\":\"Q-012\",\"category\":\"TECHNICAL\",\"text\":\"Can you explain the concept of higher-order components (HOCs) in React?\",\"sequence\":12,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"React\"]},{\"id\":\"Q-013\",\"category\":\"BEHAVIORAL\",\"text\":\"Tell me about a time when you had to work with a team to implement a feature in React. What was your role, and how did you ensure effective collaboration?\",\"sequence\":13,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"React\"]},{\"id\":\"Q-014\",\"category\":\"PROBLEM_SOLVING\",\"text\":\"If you encounter a situation where a third-party library is causing issues in your React app, how would you handle it?\",\"sequence\":14,\"source\":\"GENERAL\",\"depthTarget\":\"APPLIED\",\"skillTags\":[\"React\"]},{\"id\":\"Q-015\",\"category\":\"SYSTEM_DESIGN\",\"text\":\"How would you implement authentication in a React application? What libraries or techniques would you use?\",\"sequence\":15,\"source\":\"GENERAL\",\"depthTarget\":\"DEEP\",\"skillTags\":[\"React\"]}]}",
+      "inputTokens": 312,
+      "outputTokens": 850,
+      "costUsd": 0.0005568,
+      "latencyMs": 11039,
+      "modelUsed": "gpt-4o-mini",
+      "createdAt": "2026-06-05T07:41:22.685Z"
+    },
+    {
+      "id": "AL-20260605-1001",
+      "interviewId": "INT-20260605-1001",
+      "agentName": "response_evaluator",
+      "operation": "EVALUATE_RESPONSE",
+      "promptText": "You are an expert technical interviewer acting as a Response Evaluator and Adaptive Follow-up Agent.\nEvaluate the candidate's response to the given question and decide the next action.\n\nEvaluate on 4 dimensions (score 0 to 10):\n- technicalDepth\n- communication\n- problemSolving\n- roleAlignment\n\nAlso provide an overall depthScore (1 to 5) indicating the depth of the candidate's response.\nBased on the depthScore, coverage map, and questions asked (1/15), determine the next action:\n- FOLLOW_UP_EASIER (if depth <= 2)\n- FOLLOW_UP_DEEPER (if depth >= 4)\n- NEW_TOPIC (if depth == 3)\n- CONCLUDE (if questions >= totalExpected or all topics covered sufficiently)\n\nIf not CONCLUDE, provide a natural transitionText and the nextQuestionText. If CONCLUDE, nextQuestionText should be empty string.\n\n\nCurrent Question [TECHNICAL]: \"Can you explain the virtual DOM and how it works in React?\"\nCandidate Response: \"it's JS\"\nCoverage Map: {\"TECHNICAL\":0,\"BEHAVIORAL\":0,\"PROBLEM_SOLVING\":0,\"SYSTEM_DESIGN\":0}\n",
+      "responseText": "{\"depthScore\":1,\"dimensions\":{\"technicalDepth\":{\"score\":1,\"rationale\":\"The candidate's response lacks any technical detail or explanation of the virtual DOM, which is a fundamental concept in React.\"},\"communication\":{\"score\":2,\"rationale\":\"The response is very brief and does not effectively communicate any understanding of the topic.\"},\"problemSolving\":{\"score\":1,\"rationale\":\"There is no demonstration of problem-solving skills as the response does not address the question.\"},\"roleAlignment\":{\"score\":1,\"rationale\":\"The response does not align with the expectations for a role that requires knowledge of React and its concepts.\"}},\"action\":\"FOLLOW_UP_EASIER\",\"reasoning\":\"The candidate's response indicates a lack of understanding of the virtual DOM, warranting a simpler follow-up question to gauge their basic knowledge.\",\"transitionText\":\"Let's take a step back and explore some foundational concepts. \",\"nextQuestionText\":\"What do you know about how React manages state?\"}",
+      "inputTokens": 474,
+      "outputTokens": 197,
+      "costUsd": 0.0001893,
+      "latencyMs": 4247,
+      "modelUsed": "gpt-4o-mini",
+      "createdAt": "2026-06-05T07:45:29.255Z"
+    },
+    {
+      "id": "AL-20260605-1001",
+      "interviewId": "INT-20260605-1001",
+      "agentName": "response_evaluator",
+      "operation": "EVALUATE_RESPONSE",
+      "promptText": "You are an expert technical interviewer acting as a Response Evaluator and Adaptive Follow-up Agent.\nEvaluate the candidate's response to the given question and decide the next action.\n\nEvaluate on 4 dimensions (score 0 to 10):\n- technicalDepth\n- communication\n- problemSolving\n- roleAlignment\n\nAlso provide an overall depthScore (1 to 5) indicating the depth of the candidate's response.\nBased on the depthScore, coverage map, and questions asked (2/15), determine the next action:\n- FOLLOW_UP_EASIER (if depth <= 2)\n- FOLLOW_UP_DEEPER (if depth >= 4)\n- NEW_TOPIC (if depth == 3)\n- CONCLUDE (if questions >= totalExpected or all topics covered sufficiently)\n\nIf not CONCLUDE, provide a natural transitionText and the nextQuestionText. If CONCLUDE, nextQuestionText should be empty string.\n\n\nCurrent Question [TECHNICAL]: \"What do you know about how React manages state?\"\nCandidate Response: \"by hooks\"\nCoverage Map: {\"TECHNICAL\":25,\"BEHAVIORAL\":0,\"PROBLEM_SOLVING\":0,\"SYSTEM_DESIGN\":0}\n",
+      "responseText": "{\"depthScore\":1,\"dimensions\":{\"technicalDepth\":{\"score\":2,\"rationale\":\"The candidate mentioned 'hooks' but did not elaborate on how React manages state with hooks or other methods.\"},\"communication\":{\"score\":3,\"rationale\":\"The response is very brief and lacks clarity or detail, making it difficult to understand the candidate's knowledge.\"},\"problemSolving\":{\"score\":1,\"rationale\":\"There is no demonstration of problem-solving skills or application of knowledge in the response.\"},\"roleAlignment\":{\"score\":2,\"rationale\":\"The response does not align well with the expectations for a technical role that requires a deeper understanding of state management in React.\"}},\"action\":\"FOLLOW_UP_EASIER\",\"reasoning\":\"The candidate's response lacks depth and detail, indicating a need for a simpler follow-up question to gauge their understanding further.\",\"transitionText\":\"Let's explore this topic a bit more.\",\"nextQuestionText\":\"Can you explain what hooks are and how they are used to manage state in React?\"}",
+      "inputTokens": 471,
+      "outputTokens": 203,
+      "costUsd": 0.00019245,
+      "latencyMs": 4746,
+      "modelUsed": "gpt-4o-mini",
+      "createdAt": "2026-06-05T07:46:05.351Z"
+    },
+    {
+      "id": "AL-20260605-1001",
+      "interviewId": "INT-20260605-1001",
+      "agentName": "response_evaluator",
+      "operation": "EVALUATE_RESPONSE",
+      "promptText": "You are an expert technical interviewer acting as a Response Evaluator and Adaptive Follow-up Agent.\nEvaluate the candidate's response to the given question and decide the next action.\n\nEvaluate on 4 dimensions (score 0 to 10):\n- technicalDepth\n- communication\n- problemSolving\n- roleAlignment\n\nAlso provide an overall depthScore (1 to 5) indicating the depth of the candidate's response.\nBased on the depthScore, coverage map, and questions asked (3/15), determine the next action:\n- FOLLOW_UP_EASIER (if depth <= 2)\n- FOLLOW_UP_DEEPER (if depth >= 4)\n- NEW_TOPIC (if depth == 3)\n- CONCLUDE (if questions >= totalExpected or all topics covered sufficiently)\n\nIf not CONCLUDE, provide a natural transitionText and the nextQuestionText. If CONCLUDE, nextQuestionText should be empty string.\n\n\nCurrent Question [TECHNICAL]: \"Can you explain what hooks are and how they are used to manage state in React?\"\nCandidate Response: \"used for react life cycle\"\nCoverage Map: {\"TECHNICAL\":50,\"BEHAVIORAL\":0,\"PROBLEM_SOLVING\":0,\"SYSTEM_DESIGN\":0}\n",
+      "responseText": "{\"depthScore\":1,\"dimensions\":{\"technicalDepth\":{\"score\":2,\"rationale\":\"The candidate's response is very vague and does not accurately describe what hooks are or how they manage state in React.\"},\"communication\":{\"score\":3,\"rationale\":\"The response is unclear and lacks detail, making it difficult to understand the candidate's knowledge.\"},\"problemSolving\":{\"score\":1,\"rationale\":\"There is no demonstration of problem-solving skills in the response.\"},\"roleAlignment\":{\"score\":2,\"rationale\":\"The response does not align well with the expectations for a technical role that requires knowledge of React.\"}},\"action\":\"FOLLOW_UP_EASIER\",\"reasoning\":\"The candidate's response lacks depth and clarity, indicating a need for simpler follow-up questions to gauge their understanding.\",\"transitionText\":\"Let's explore this topic a bit more. Can you tell me what you know about the different types of hooks in React?\",\"nextQuestionText\":\"What are some common hooks in React and how do they differ from each other?\"}",
+      "inputTokens": 481,
+      "outputTokens": 207,
+      "costUsd": 0.00019634999999999998,
+      "latencyMs": 3961,
+      "modelUsed": "gpt-4o-mini",
+      "createdAt": "2026-06-05T07:47:16.507Z"
+    }
+  ],
+  "nextIdCounter": 1000
+}
