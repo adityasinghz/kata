@@ -1,217 +1,208 @@
-# Test Strategy — CricZone: Local Cricket Community Platform
+# Test Strategy — AI-Assisted Interview Screening
 
-> 60+ test cases mapped to functional requirements, covering API, integration, performance, security, and edge cases.
-
----
-
-## 1. Test Case Matrix (Mapped to FRs)
-
-### FR-01: User Registration & RBAC
-
-| Test ID | Test Name | Test Type | Steps | Expected Result | Pass Criteria |
-|---------|-----------|-----------|-------|-----------------|---------------|
-| TC-01 | OTP Send – Valid Mobile | Unit | POST /auth/otp/send with valid Indian mobile | 200, OTP_SENT | Response has `otpExpiry` |
-| TC-02 | OTP Send – Invalid Format | Unit | POST /auth/otp/send with "12345" | 400 INVALID_REQUEST | Error message returned |
-| TC-03 | OTP Verify – Correct OTP | Unit | POST /auth/otp/verify with matching OTP | 200, JWT returned | `jwt` and `refreshToken` present |
-| TC-04 | OTP Verify – Expired OTP | Unit | Verify OTP after 5 min expiry | 400 INVALID_OTP | `retryAllowed: true` in response |
-| TC-05 | OTP Verify – Wrong OTP | Unit | Submit incorrect 6-digit OTP | 400 INVALID_OTP | Error returned, user not logged in |
-| TC-06 | JWT Expiry Refresh | Unit | Call /auth/refresh with valid refreshToken | 200, new JWT | New JWT expiry > old |
-| TC-07 | Role-Based Access – Scorer | Integration | Scorer JWT calls POST /matches/{id}/score/ball | 200 | Access granted |
-| TC-08 | Role-Based Access – Fan Blocked | Integration | Fan JWT calls POST /matches/{id}/score/ball | 403 FORBIDDEN | Fan cannot score |
-| TC-09 | New User Profile Complete | E2E | OTP verify + PUT /users/{id}/profile | Profile saved | `isProfileComplete: true` |
+> Comprehensive testing approach covering functional validation, AI-output validation, edge cases, and automation strategy.
 
 ---
 
-### FR-02: Tournament Management
+## 1. Test Case Matrix (Mapped to User Stories)
 
-| Test ID | Test Name | Test Type | Steps | Expected Result | Pass Criteria |
-|---------|-----------|-----------|-------|-----------------|---------------|
-| TC-10 | Create Tournament – Valid | Unit | Organizer POST /tournaments | 201, tournamentId returned | `status: DRAFT` |
-| TC-11 | Create Tournament – Missing Name | Unit | POST /tournaments without `name` | 400 VALIDATION_FAILED | Error includes field name |
-| TC-12 | Team Registration – Valid | Integration | Team captain POST /tournaments/{id}/register-team | 200, PENDING status | Organizer receives notification |
-| TC-13 | Team Registration – Slot Full | Integration | Register when maxTeams reached | 409 CONFLICT | "Tournament is full" message |
-| TC-14 | Auto-Schedule Generation | Integration | Organizer triggers auto-schedule | 201, fixtures array | All teams appear in fixtures |
-| TC-15 | Points Table Update | Integration | Enter match result → check points table | Points table updated | Winning team +2 pts, NRR recalculated |
-| TC-16 | Tournament Clone | Unit | POST /tournaments/{id}/clone | 201, new tournamentId | New tournament in DRAFT state |
+### US-01/02/03: Flexible Interview Setup
 
----
-
-### FR-04: Live Scoring
-
-| Test ID | Test Name | Test Type | Steps | Expected Result | Pass Criteria |
-|---------|-----------|-----------|-------|-----------------|---------------|
-| TC-17 | Score Valid Ball – 4 Runs | Unit | POST /matches/{id}/score/ball (runs:4) | 200, scorecard updated | Batting card +4 runs |
-| TC-18 | Score Wide Ball | Unit | POST with extraType: "WIDE" | 200 | Extra +1 run, ball not counted in over |
-| TC-19 | Score No-Ball + 6 | Unit | POST extraType: "NO_BALL", runsScored: 6 | 200 | Total = 7 (extra + 6 runs), ball not counted |
-| TC-20 | Wicket – Caught | Unit | POST wicketType: "CAUGHT" | 200 | Wickets +1, dismissedBatsman moved to out |
-| TC-21 | Undo Last Ball | Unit | POST /matches/{id}/undo within 5 balls | 200 | Score reverted, ball_events row deleted |
-| TC-22 | Undo Beyond 5 Balls | Unit | 6th undo attempt without approval | 403 | Cannot undo without organizer override |
-| TC-23 | Target Calculation | Integration | End 1st innings → check target | Target = 1st innings score + 1 | Target persisted in innings record |
-| TC-24 | Match Win – Target Chased | Integration | 2nd innings score > target | MatchCompleted published | winner_team_id set correctly |
-| TC-25 | WebSocket Push Speed | Performance | Score ball → measure fan UI update time | < 3 seconds | 95th percentile < 3s |
-| TC-26 | Concurrent Scoring Sessions | Performance | 50 simultaneous active matches being scored | All scorecards independent | No cross-match data contamination |
+| Test ID | Test Name | Type | Steps | Expected Result | Automated? |
+|---------|-----------|------|-------|-----------------|-----------|
+| TC-01 | Setup — Valid role+skills | Unit | POST /api/interviews with role="Backend Engineer", skills=["Java","Spring"] | 201, interview created with DRAFT status | ✅ |
+| TC-02 | Setup — Missing role | Unit | POST /api/interviews without role field | 400 VALIDATION_ERROR | ✅ |
+| TC-03 | Setup — Question generation | Integration | Create interview → verify questions generated | 10-15 questions with categories | ✅ |
+| TC-04 | Setup — Questions match skills | AI Validation | Generate for "React Developer" → check question content | Questions reference React, components, hooks | 🔍 Manual |
+| TC-05 | Setup — Resume parsing | Integration | Submit resume text → verify highlights extracted | Skills and experience identified | ✅ |
+| TC-06 | Setup — JD gap analysis | AI Validation | Resume missing "Kubernetes" from JD → verify gap question | At least 1 question probing Kubernetes experience | 🔍 Manual |
+| TC-07 | Setup — Edit question bank | Unit | Edit question text → save → verify update persisted | Updated text saved | ✅ |
+| TC-08 | Setup — Level calibration | AI Validation | Generate for Junior vs Senior → compare depth | Senior questions are deeper/more complex | 🔍 Manual |
 
 ---
 
-### FR-05: Player Performance Analytics
+### US-04/05/06: Adaptive Questioning
 
-| Test ID | Test Name | Test Type | Steps | Expected Result | Pass Criteria |
-|---------|-----------|-----------|-------|-----------------|---------------|
-| TC-27 | Stats Update Post-Match | Integration | MatchCompleted event → check player stats | Career stats updated | Runs, wickets incremented correctly |
-| TC-28 | PPS Calculation – All-Rounder | Unit | Player with 80 batting + 70 bowling scores | PPS calculated | PPS = weighted average of components |
-| TC-29 | PPS Calculation – Pure Batsman | Unit | Player with 0 bowling figures | PPS calculated | Bowling component = 0, not null |
-| TC-30 | Player Compare API | Unit | GET /players/compare?player1=X&player2=Y | Both player stats returned | Winner field identifies higher PPS |
-| TC-31 | AI Insight Generation | Unit | Player with 5+ matches of data | Insights generated | At least 1 insight per player |
-| TC-32 | Stat Card Generation | Integration | POST-match stat card for 50+ scorer | Image URL returned | Card accessible via CDN |
-
----
-
-### FR-06: Store Locator & Offers
-
-| Test ID | Test Name | Test Type | Steps | Expected Result | Pass Criteria |
-|---------|-----------|-----------|-------|-----------------|---------------|
-| TC-33 | Nearby Stores – Valid Location | Unit | GET /stores/nearby?lat=18.52&lng=73.85&radius=10 | Stores within 10km | Distance correctly calculated |
-| TC-34 | Nearby Stores – No Stores | Unit | GET in area with no stores | 200, empty array | `stores: []` |
-| TC-35 | Offer Redeem – Valid | Integration | Fan redeems valid, active offer | 200, QR code generated | `currentRedemptions +1` in DB |
-| TC-36 | Offer Redeem – Expired | Unit | Redeem offer past `validUntil` | 422 VALIDATION_FAILED | "Offer has expired" |
-| TC-37 | Offer Redeem – Max Reached | Unit | Redeem when currentRedemptions = maxRedemptions | 409 CONFLICT | "Offer fully redeemed" |
-| TC-38 | Store Owner Posts Offer | Integration | Store Owner POST offer | 201 | Followers notified via FCM |
+| Test ID | Test Name | Type | Steps | Expected Result | Automated? |
+|---------|-----------|------|-------|-----------------|-----------|
+| TC-09 | Adaptive — Shallow response | Unit | Submit depth=1 response → check next action | FOLLOW_UP_EASIER action returned | ✅ |
+| TC-10 | Adaptive — Adequate response | Unit | Submit depth=3 response → check next action | NEW_TOPIC action returned | ✅ |
+| TC-11 | Adaptive — Deep response | Unit | Submit depth=5 response → check next action | FOLLOW_UP_DEEPER action returned | ✅ |
+| TC-12 | Adaptive — Coverage tracking | Integration | Ask 8 questions across categories → check coverage | All categories have ≥ 1 question | ✅ |
+| TC-13 | Adaptive — Auto-conclude | Integration | Complete 12 questions → check status | Interview status = COMPLETED | ✅ |
+| TC-14 | Adaptive — No duplicate questions | Integration | Full interview → check question uniqueness | All questions are distinct | ✅ |
+| TC-15 | Adaptive — Conversation flow | AI Validation | Check transition text between questions | Natural, acknowledging transitions | 🔍 Manual |
+| TC-16 | Adaptive — Topic switch | Integration | Low coverage topic → verify topic is chosen next | Least-covered topic selected | ✅ |
 
 ---
 
-### FR-07: Sponsorship Management
+### US-07/08: Automated Scoring & Feedback
 
-| Test ID | Test Name | Test Type | Steps | Expected Result | Pass Criteria |
-|---------|-----------|-----------|-------|-----------------|---------------|
-| TC-39 | Post Sponsorship Requirement | Unit | Organizer POST /sponsorships/requirements | 201, MATCHING_IN_PROGRESS | Kafka event published |
-| TC-40 | Sponsor Match Found | Integration | Requirement → AI match run | SponsorMatchFound event | Top 3 sponsors identified |
-| TC-41 | Branding Overlay Active | Integration | Deal activated → scoring service called | Logo on scorecard | `sponsorOverlay` in scorecard API |
-| TC-42 | ROI Dashboard | Unit | GET /sponsorships/{id}/roi after 5 matches | ROI metrics returned | All metric fields populated |
-
----
-
-## 2. API Test Specs
-
-### Authentication: POST /auth/otp/verify
-
-**Success Case:**
-```
-Method: POST
-URL: /auth/otp/verify
-Body: { "mobileNumber": "+91-9876543210", "otp": "482931" }
-Expected: 200, { "jwt": "...", "refreshToken": "..." }
-```
-
-**Failure Cases:**
-```
-1. Expired OTP: 400, { "error": "INVALID_OTP" }
-2. Wrong OTP:   400, { "error": "INVALID_OTP" }
-3. 5+ retries:  429, { "error": "RATE_LIMITED" }
-```
-
-### Scoring: POST /matches/{id}/score/ball
-
-**Success Case:**
-```
-Method: POST
-Headers: Authorization: Bearer <SCORER_JWT>
-URL: /matches/M-001/score/ball
-Body: { "overNumber": 3, "ballNumber": 4, "runsScored": 6, "batsmanId": "P-001", "bowlerId": "P-012" }
-Expected: 200, { "scorecard": { "score": "45/2", "lastBall": "SIX!" } }
-```
-
-**Failure Cases:**
-```
-1. Not a scorer: 403 FORBIDDEN
-2. Over > match overs: 422 VALIDATION_FAILED "Over exceeds match format limit"
-3. Match not started: 422 VALIDATION_FAILED "Match is not in IN_PROGRESS state"
-```
+| Test ID | Test Name | Type | Steps | Expected Result | Automated? |
+|---------|-----------|------|-------|-----------------|-----------|
+| TC-17 | Scoring — Dimension scores | Unit | Evaluate response → verify 4 dimension scores | All scores 0-10, all present | ✅ |
+| TC-18 | Scoring — Overall confidence | Unit | Average scores → verify confidence calculation | Confidence = weighted avg mapped to 0-100 | ✅ |
+| TC-19 | Scoring — Recommendation mapping | Unit | Overall ≥ 80 → STRONG_HIRE | Correct recommendation | ✅ |
+| TC-20 | Scoring — Recommendation mapping | Unit | Overall ≥ 60, < 80 → HIRE | Correct recommendation | ✅ |
+| TC-21 | Scoring — Recommendation mapping | Unit | Overall ≥ 40, < 60 → MAYBE | Correct recommendation | ✅ |
+| TC-22 | Scoring — Recommendation mapping | Unit | Overall < 40 → NO_HIRE | Correct recommendation | ✅ |
+| TC-23 | Scoring — Rubric adherence | AI Validation | Weak response → check score < 5 | Score reflects quality accurately | 🔍 Manual |
+| TC-24 | Scoring — Score inflation check | AI Validation | Average responses → verify scores cluster 4-6 | No systematic bias toward high scores | 🔍 Manual |
+| TC-25 | Feedback — Summary generation | Integration | Complete interview → verify summary generated | Summary has strengths, concerns, quotes | ✅ |
+| TC-26 | Feedback — Strengths evidence | AI Validation | Summary references actual candidate responses | Specific Q&A pairs cited | 🔍 Manual |
 
 ---
 
-## 3. Integration Test Plan
+### US-09/10: AI Usage & Cost Tracking
 
-### IT-01: Full Match Lifecycle
-1. Create tournament → Register 2 teams → Schedule fixture
-2. Start match → Score complete T20 innings (20 overs)
-3. Record 2nd innings, chase target successfully
-4. Verify: MatchCompleted event published, player stats updated, match summary post auto-created
-
-### IT-02: Notification Delivery Pipeline
-1. Score a wicket ball
-2. Verify Kafka `BallScored` event published
-3. Verify Notification Service consumes event
-4. Verify FCM push delivered to all subscribed fans
-
-### IT-03: Sponsorship Full Flow
-1. Organizer posts sponsorship requirement
-2. AI matching runs and selects sponsor
-3. Sponsor accepts deal
-4. Verify branding overlay appears on live scorecard
-5. After tournament, verify ROI dashboard has match view data
-
-### IT-04: Store Offer Redemption Flow
-1. Store Owner creates offer
-2. Fan discovers store via geo-search within 5 km
-3. Fan redeems offer — QR code generated
-4. Store owner scans QR → offer marked redeemed
-5. Verify `currentRedemptions` incremented in DB
+| Test ID | Test Name | Type | Steps | Expected Result | Automated? |
+|---------|-----------|------|-------|-----------------|-----------|
+| TC-27 | Cost — Token tracking | Unit | AI call → verify tokens recorded | Input + output tokens logged | ✅ |
+| TC-28 | Cost — Per-interview total | Integration | Complete interview → sum all tokens | Total matches sum of all agent calls | ✅ |
+| TC-29 | Cost — USD calculation | Unit | 1000 input tokens at $0.075/1M → cost | $0.000075 calculated correctly | ✅ |
+| TC-30 | Cost — Agent breakdown | Integration | Complete interview → check breakdown | Each agent's token/cost shown separately | ✅ |
+| TC-31 | Cost — Dashboard data | Integration | 3 interviews → verify dashboard totals | Aggregate totals and averages correct | ✅ |
+| TC-32 | Cost — Zero for rule-based | Unit | Integrity monitor call → check tokens | 0 tokens, $0.00 cost | ✅ |
 
 ---
 
-## 4. Performance & Load Profiles
+### US-11/12: Audit Trail & Usefulness
 
-| Scenario | Target | Tool |
-|----------|--------|------|
-| 50 concurrent live match scoring sessions | All 50 independent with < 3s scorecard push | k6 |
-| 10,000 concurrent scorecard viewers (single final) | p95 load time < 2 seconds | k6 + WebSocket |
-| Store nearby search (50 concurrent users) | p95 < 1 second | k6 |
-| Player stats page load (1,000 concurrent) | p95 < 2 seconds | k6 |
-| OTP send rate (1,000 requests/min) | All pass without rate limiting (unless > configured threshold) | Postman + Perf |
-
----
-
-## 5. Security Test Cases (OWASP Top 10 Aligned)
-
-| Test ID | Vulnerability | Test Case | Expected |
-|---------|--------------|-----------|----------|
-| SEC-01 | Broken Access Control | Fan JWT calls Scorer-only API | 403 FORBIDDEN |
-| SEC-02 | Broken Auth | Expired JWT used | 401 UNAUTHORIZED |
-| SEC-03 | Injection (SQL) | `name = "'; DROP TABLE users;--"` in POST /users | Input sanitized, 400 or safe response |
-| SEC-04 | Injection (XSS) | `content = "<script>alert(1)</script>"` in POST /posts | Content sanitized before storage |
-| SEC-05 | Rate Limiting | 100 OTP requests in 1 min | 429 RATE_LIMITED after threshold |
-| SEC-06 | Sensitive Data Exposure | GET /users/{id} by another user | Only non-sensitive fields exposed (no OTP, no token) |
-| SEC-07 | Broken Object-Level Auth | User A tries to edit User B's profile | 403, not allowed |
-| SEC-08 | Mass Assignment | PUT /users with `role: ADMIN` in body | Role change ignored, controlled via admin API only |
+| Test ID | Test Name | Type | Steps | Expected Result | Automated? |
+|---------|-----------|------|-------|-----------------|-----------|
+| TC-33 | Audit — Log creation | Unit | AI call → verify audit log entry | Entry with all required fields | ✅ |
+| TC-34 | Audit — Immutability | Unit | Attempt to update existing log | Operation rejected or not exposed | ✅ |
+| TC-35 | Audit — Interview filter | Integration | Filter by interview ID → verify results | Only matching interview's logs returned | ✅ |
+| TC-36 | Audit — Agent filter | Integration | Filter by agent name → verify results | Only matching agent's logs returned | ✅ |
+| TC-37 | Audit — Timestamp ordering | Integration | Multiple logs → verify chronological order | Ordered by created_at ASC | ✅ |
+| TC-38 | Audit — Prompt content | Integration | Check stored prompt text | Full prompt text preserved | ✅ |
+| TC-39 | Usefulness — Rating submission | Unit | Submit 4-star rating → verify saved | Rating persisted | ✅ |
 
 ---
 
-## 6. Edge Cases
+### US-13/14/15: Human-in-the-Loop Review
+
+| Test ID | Test Name | Type | Steps | Expected Result | Automated? |
+|---------|-----------|------|-------|-----------------|-----------|
+| TC-40 | Review — Approve action | Unit | Reviewer approves → verify status | override_type = APPROVED, status = REVIEWED | ✅ |
+| TC-41 | Review — Adjust scores | Unit | Modify tech_depth from 6 to 8 with justification | Adjusted score saved, justification logged | ✅ |
+| TC-42 | Review — Reject override | Unit | Override HIRE → NO_HIRE with reason | Decision = REJECT, reason required and saved | ✅ |
+| TC-43 | Review — Reject without reason | Unit | Submit reject without notes | 400 VALIDATION_ERROR — notes required | ✅ |
+| TC-44 | Review — Audit trail entry | Integration | Any review action → check audit log | Decision logged with reviewer, timestamp, type | ✅ |
+| TC-45 | Review — Q&A side-by-side | UI Test | Open review page → verify layout | Question + response + AI score visible per Q&A | 🔍 Manual |
+| TC-46 | Review — Confidence display | UI Test | Review page → verify confidence indicators | High/Medium/Low badges next to scores | 🔍 Manual |
+
+---
+
+## 2. AI-Output Validation Strategy
+
+### Approach: Golden Set + Rubric Compliance
+
+AI outputs cannot be tested with exact match assertions. Instead, we use:
+
+| Method | Usage | Example |
+|--------|-------|---------|
+| **Schema Validation** | Every AI output must conform to expected JSON schema | Question has `id`, `category`, `text`, `depth_target` |
+| **Range Validation** | Numeric scores must be within valid ranges | `0 ≤ score ≤ 10`, `1 ≤ depth ≤ 5` |
+| **Enum Validation** | Categorical outputs must be valid enum values | `category ∈ {TECHNICAL, BEHAVIORAL, PROBLEM_SOLVING, SYSTEM_DESIGN}` |
+| **Coverage Validation** | Question sets must cover all required categories | At least 1 question per category |
+| **Golden Set Comparison** | Known inputs → expected output patterns | "Java + Spring Boot" → questions mention Spring concepts |
+| **Bias Detection** | Score distribution across test set | Mean score should be 5-6, not 8-9 (calibration check) |
+| **Relevance Scoring** | Keywords from role/skills appear in generated questions | ≥ 70% of skill keywords appear in question bank |
+
+### Golden Test Cases
+
+| Input | Expected Pattern | Validation |
+|-------|-----------------|------------|
+| Role=Frontend, Skills=[React, TypeScript] | Questions mention components, hooks, TypeScript types | Keyword presence check |
+| Level=Junior | No system design questions at DEEP depth | Depth target validation |
+| Level=Senior | At least 2 SYSTEM_DESIGN questions | Category count check |
+| Weak response (< 20 words) | Depth score ≤ 2 | Range check |
+| Strong response (detailed, with examples) | Depth score ≥ 4 | Range check |
+
+---
+
+## 3. Edge Cases
 
 | Test ID | Scenario | Expected Behavior |
 |---------|----------|-------------------|
-| EC-01 | All 10 wickets fall in final over — match ends mid-over | Match immediately transitions to COMPLETED; remaining balls skipped |
-| EC-02 | Scorer loses connectivity mid-match | Last saved state preserved in DB; scoring resumes from last confirmed ball |
-| EC-03 | Both teams score equal runs — tie | Super Over triggered; system awaits scorer to start new mini-innings |
-| EC-04 | Tournament cancelled with active sponsorship deal | Deals status → CANCELLED; sponsor ROI shows 0 |
-| EC-05 | Store listed in wrong city due to GPS error | Ground truth check via address; admin can correct location |
-| EC-06 | Player participates in two concurrent tournaments | Stats aggregated across both; PPS recalculated after each match independently |
-| EC-07 | Tournament with only 1 team registers | Registration closed, tournament auto-cancelled — organizer notified |
-| EC-08 | Offer QR scanned twice by same user | Second scan returns 409 CONFLICT "Already redeemed" |
-| EC-09 | Sponsor logo upload > 5MB | 400 VALIDATION_FAILED "File size exceeds 5MB limit" |
-| EC-10 | Rain causes match abandonment after 10 overs | Scorer selects "Abandoned" — Duckworth-Lewis flag noted; NRR not affected |
+| EC-01 | Candidate submits empty response | Depth = 1, gentle prompt to elaborate, question counted |
+| EC-02 | Candidate submits extremely long response (> 2000 words) | Response truncated for AI evaluation, full text preserved in audit |
+| EC-03 | Candidate responds with off-topic content | Low relevance score, AI redirects to topic |
+| EC-04 | Candidate gives identical response to multiple questions | Integrity flag raised, reviewer notified |
+| EC-05 | All responses are depth=5 (exceptional candidate) | Interview completes faster (8 questions minimum), all DEEP follow-ups |
+| EC-06 | All responses are depth=1 (struggling candidate) | Interview continues with simpler questions, eventually concludes with low recommendation |
+| EC-07 | Interview abandoned mid-way (browser close) | Partial data preserved, status = IN_PROGRESS, can be resumed |
+| EC-08 | Hiring manager enters nonsensical skills | AI generates generic questions, graceful degradation |
+| EC-09 | Resume and JD have zero overlap | AI focuses on transferable skills and learning ability |
+| EC-10 | Concurrent review by two reviewers | Last write wins (MVP); production: optimistic locking |
+| EC-11 | Token budget exceeded mid-interview | Graceful conclusion with available data, cost alert logged |
+| EC-12 | AI generates duplicate question | De-duplication check before presenting, regenerate if duplicate |
 
 ---
 
-## 7. Acceptance Criteria
+## 4. Automation vs Manual Verification Matrix
+
+| Category | Automated | Manual | Total |
+|----------|-----------|--------|-------|
+| Functional (CRUD, state, validation) | 28 | 0 | 28 |
+| AI Output (schema, range, enum) | 8 | 0 | 8 |
+| AI Quality (relevance, calibration, natural language) | 0 | 10 | 10 |
+| UI/UX (layout, responsiveness, animations) | 0 | 4 | 4 |
+| **Total** | **36** | **14** | **50** |
+
+### What Should Be Automated
+- Input validation (required fields, formats)
+- State machine transitions (DRAFT → READY → IN_PROGRESS → COMPLETED → REVIEWED)
+- Token counting accuracy
+- Cost calculation correctness
+- Audit log completeness
+- Score range validation
+- Question bank schema validation
+- Coverage tracking logic
+
+### What Should Be Manually Verified
+- Question relevance to role/skills
+- Natural language quality of transitions
+- Scoring calibration (not too high/low)
+- Feedback summary readability and accuracy
+- UI layout and visual design
+- Conversational flow feel
+- Accessibility and usability
+
+---
+
+## 5. Performance Test Profiles
+
+| Scenario | Target | Tool |
+|----------|--------|------|
+| Question generation for complex role (10+ skills) | < 3 seconds | Manual timing |
+| Adaptive response evaluation | < 2 seconds per response | Manual timing |
+| Full interview (10 questions) end-to-end | < 5 minutes wall clock | Manual walkthrough |
+| Audit trail query (100+ entries) | < 500ms | Manual timing |
+| Cost dashboard load (50 interviews) | < 1 second | Manual timing |
+
+---
+
+## 6. Security Test Cases
+
+| Test ID | Vulnerability | Test | Expected |
+|---------|--------------|------|----------|
+| SEC-01 | Prompt Injection | Candidate response contains "Ignore all instructions..." | AI evaluation not affected; response scored normally |
+| SEC-02 | XSS in Input | Skills field contains `<script>alert(1)</script>` | Content sanitized, no script execution |
+| SEC-03 | Data Exposure | Candidate views another candidate's interview | 403 FORBIDDEN (when auth implemented) |
+| SEC-04 | Token Budget Attack | Extremely long JD input attempting token exhaustion | Input truncated to max length |
+| SEC-05 | Audit Tampering | Attempt to modify audit log entry | No update/delete API exposed |
+
+---
+
+## 7. Acceptance Criteria Summary
 
 | Feature | Acceptance Criteria |
-|---------|---------------------|
-| Live Scoring | Scorecard visible to fans within 3 seconds of a ball being scored |
-| Player Analytics | PPS and career stats updated within 5 minutes of match completion |
-| Store Locator | Stores within 10 km displayed with correct distance within 1 second |
-| Tournament Scheduling | Fixtures generated for 8-team T20 within 5 seconds using auto-schedule |
-| Notifications | Push notifications delivered within 10 seconds of triggering event |
-| Sponsorship Matching | AI matching result available within 30 seconds of requirement posted |
-| OTP Auth | OTP delivered within 30 seconds on Airtel/Jio/BSNL networks |
-| Security | Zero critical OWASP vulnerabilities in pre-launch pentest |
+|---------|-------------------|
+| Interview Setup | AI generates 10-15 role-relevant questions in < 3 seconds |
+| Adaptive Questioning | Follow-ups adjust to depth correctly; all topics covered |
+| Scoring | Structured scores (0-10) per dimension; recommendation generated |
+| Cost Tracking | Token count accurate within ±5%; cost displayed per interview |
+| Audit Trail | Every AI call logged with prompt, response, tokens, timestamp |
+| Human Review | Override actions work; decisions logged with attribution |

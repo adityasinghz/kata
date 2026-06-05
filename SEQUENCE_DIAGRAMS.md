@@ -1,163 +1,200 @@
-# Sequence Diagrams — CricZone: Local Cricket Community Platform
-
-> Four key sequence diagrams covering the most critical workflows in CricZone.
+# Sequence Diagrams — AI-Assisted Interview Screening
 
 ---
 
-## SD-1: Player Registration & Profile Setup
+## 1. Interview Setup & Question Generation
 
 ```mermaid
 sequenceDiagram
-    actor User as Player (Mobile App)
-    participant GW as API Gateway
-    participant AUTH as User & Auth Service
-    participant NOTIFY as Notification Service
-    participant PG as PostgreSQL
+    actor HM as Hiring Manager
+    participant UI as Setup Page
+    participant API as API Route
+    participant IS as Interview Setup Service
+    participant ORCH as AI Orchestrator
+    participant QG as Question Generator Agent
+    participant TC as Cost Tracker
+    participant AL as Audit Logger
+    participant DB as Data Store
 
-    User->>GW: POST /auth/otp/send { mobile: "+91-XXXXXXXXXX" }
-    GW->>AUTH: Forward request
-    AUTH->>NOTIFY: Trigger OTP SMS
-    NOTIFY-->>User: SMS: "Your CricZone OTP is 482931"
+    HM->>UI: Fill form (role, skills, level, JD, resume)
+    UI->>API: POST /api/interviews {config}
+    API->>IS: createInterview(config)
+    IS->>IS: validateConfig()
+    IS->>IS: parseResumeHighlights(resume)
+    IS->>ORCH: generateQuestions(config + resumeHighlights)
+    ORCH->>ORCH: buildPrompt(template, context)
+    ORCH->>QG: execute(prompt)
+    Note over QG: Few-Shot + Structured Output
+    QG-->>ORCH: questions[] (10-15 items)
+    ORCH->>TC: trackTokens(inputTokens, outputTokens)
+    ORCH->>AL: logEntry(agent, prompt, response, tokens)
+    ORCH-->>IS: questionBank
+    IS->>DB: save(interview + questions)
+    IS-->>API: {interviewId, status: DRAFT, questions}
+    API-->>UI: Interview created
+    UI-->>HM: Show question bank for review/edit
     
-    User->>GW: POST /auth/otp/verify { mobile, otp: "482931" }
-    GW->>AUTH: Forward request
-    AUTH->>AUTH: Validate OTP (5 min expiry)
-    AUTH->>PG: INSERT INTO users (mobile, role="PLAYER", status="PENDING_PROFILE")
-    AUTH-->>GW: { userId, tempToken }
-    GW-->>User: 200 OK { userId, tempToken }
-    
-    User->>GW: PUT /users/{userId}/profile { name, city, preferredFormat, photo }
-    GW->>AUTH: Forward (bearer tempToken)
-    AUTH->>PG: UPDATE users SET profile_complete=true, name, city, preferred_format
-    AUTH->>AUTH: Issue full JWT (role: PLAYER)
-    AUTH-->>GW: { jwt, refreshToken }
-    GW-->>User: 200 OK { jwt, refreshToken, profile }
-    
-    Note over User,PG: Player is now registered and authenticated
-```
-
----
-
-## SD-2: Ball-by-Ball Live Scoring & Real-Time Fan Update
-
-```mermaid
-sequenceDiagram
-    actor Scorer as Scorer (Mobile App)
-    participant GW as API Gateway
-    participant SC as Live Scoring Service
-    participant REDIS as Redis Cache
-    participant KAFKA as Apache Kafka
-    participant PG as PostgreSQL
-    participant NOTIFY as Notification Service
-    participant FAN as Fan (Mobile App, WebSocket)
-
-    Scorer->>GW: POST /matches/{id}/score/ball { runs: 4, extras: null, wicket: null }
-    GW->>SC: Forward request (JWT: SCORER role)
-    SC->>SC: Validate ball event (over state, bowler, batsman)
-    SC->>PG: INSERT INTO ball_events (match_id, over, ball, runs=4, batsman_id, bowler_id)
-    SC->>SC: Recompute innings scorecard (batting card, bowling card, extras)
-    SC->>REDIS: SET match:{id}:scorecard { score: "124/3", overs: "14.2", ... }
-    SC->>KAFKA: Publish: BallScored { matchId, ballEvent, currentScore }
-    SC-->>GW: 200 OK { scorecard }
-    GW-->>Scorer: 200 OK
-
-    Note over SC,FAN: WebSocket Push Path
-    SC->>FAN: WebSocket Push: { event: "BALL_SCORED", score: "124/3 (14.2)", lastBall: "4 runs" }
-    FAN->>FAN: Update live scorecard UI (< 3 seconds total)
-
-    Note over KAFKA,NOTIFY: Milestone Event Handling
-    KAFKA->>NOTIFY: Consume BallScored (check for milestone: batsman on 48 → 50)
-    alt Batsman reaches 50
-        NOTIFY->>NOTIFY: Compose push: "🏏 Arjun hits 50! India A: 124/3"
-        NOTIFY->>FAN: FCM Push Notification
+    opt Manager edits questions
+        HM->>UI: Edit/add/remove questions
+        UI->>API: PUT /api/interviews/{id}/questions
+        API->>DB: updateQuestions()
     end
+    
+    HM->>UI: Confirm & Start
+    UI->>API: POST /api/interviews/{id}/start
+    API->>DB: updateStatus(READY)
 ```
 
 ---
 
-## SD-3: Tournament Creation & Team Registration
+## 2. Adaptive Interview Session
 
 ```mermaid
 sequenceDiagram
-    actor Org as Organizer (Web/Mobile)
-    participant GW as API Gateway
-    participant TOUR as Tournament Management Service
-    participant NOTIFY as Notification Service
-    participant KAFKA as Apache Kafka
-    participant PG as PostgreSQL
-    actor Team as Team Captain (Mobile App)
+    actor C as Candidate
+    participant UI as Interview Page
+    participant API as API Route
+    participant IM as Interview Manager
+    participant ORCH as AI Orchestrator
+    participant RE as Response Evaluator
+    participant AF as Adaptive Agent
+    participant TC as Cost Tracker
+    participant AL as Audit Logger
 
-    Org->>GW: POST /tournaments { name, format: "T20", startDate, maxTeams: 8 }
-    GW->>TOUR: Forward request (JWT: ORGANIZER role)
-    TOUR->>PG: INSERT INTO tournaments (name, format, start_date, max_teams, status="REGISTRATION_OPEN")
-    TOUR->>KAFKA: Publish: TournamentCreated { tournamentId, organizerId }
-    TOUR-->>GW: 201 Created { tournamentId, registrationLink }
-    GW-->>Org: 201 Created { tournamentId, registrationLink }
+    C->>UI: Open interview link
+    UI->>API: GET /api/interviews/{id}
+    API-->>UI: Interview data + first question
+    UI-->>C: Display Question 1
 
-    Note over Org,Team: Organizer shares registrationLink with teams (WhatsApp, social)
-    
-    Team->>GW: POST /tournaments/{id}/register-team { teamName, players: [...], captain }
-    GW->>TOUR: Forward request (JWT: PLAYER role)
-    TOUR->>TOUR: Validate squad size, check team slot availability
-    TOUR->>PG: INSERT INTO team_registrations (tournament_id, team_name, status="PENDING")
-    TOUR-->>GW: 200 OK { registrationId, status: "PENDING" }
-    GW-->>Team: 200 OK
+    loop For each question (8-12 rounds)
+        C->>UI: Type response
+        UI->>API: POST /api/interviews/{id}/respond
+        API->>IM: processResponse(questionId, responseText)
+        
+        par Evaluate Response
+            IM->>ORCH: evaluateResponse(question, response)
+            ORCH->>RE: execute(question, response, rubric)
+            Note over RE: Rubric-Grounded + CoT
+            RE-->>ORCH: {depthScore, dimensionScores, observations}
+            ORCH->>TC: trackTokens(tokens)
+            ORCH->>AL: logEntry(evaluator, prompt, response, scores)
+        end
+        
+        IM->>IM: updateCoverageMap(category)
+        
+        par Determine Next Action
+            IM->>ORCH: getNextAction(depth, coverage, history)
+            ORCH->>AF: execute(context, depth, coverage)
+            Note over AF: Chain-of-Thought Reasoning
+            AF-->>ORCH: {action, nextQuestion, transition}
+            ORCH->>TC: trackTokens(tokens)
+            ORCH->>AL: logEntry(adaptive, prompt, response, action)
+        end
 
-    Org->>GW: PUT /tournaments/{id}/registrations/{regId}/approve
-    GW->>TOUR: Forward request
-    TOUR->>PG: UPDATE team_registrations SET status="APPROVED"
-    TOUR->>KAFKA: Publish: TeamApproved { tournamentId, teamId }
-    KAFKA->>NOTIFY: Consume TeamApproved
-    NOTIFY->>Team: FCM Push: "Your team is confirmed for the Metro T20 Cup! 🏆"
+        alt action = FOLLOW_UP_EASIER
+            IM-->>API: Simpler follow-up question
+        else action = FOLLOW_UP_DEEPER
+            IM-->>API: Advanced follow-up question
+        else action = NEW_TOPIC
+            IM-->>API: Question from least-covered topic
+        else action = CONCLUDE
+            IM->>IM: completeInterview()
+            IM-->>API: Interview complete signal
+        end
+        
+        API-->>UI: {nextQuestion, progress, currentScores}
+        UI-->>C: Display next question + progress bar
+    end
 
-    Note over Org,PG: After all teams confirmed
-    Org->>GW: POST /tournaments/{id}/schedule/auto-generate
-    GW->>TOUR: Forward request
-    TOUR->>TOUR: Run round-robin / knockout scheduling algorithm
-    TOUR->>PG: INSERT INTO fixtures (match_date, team1, team2, ground, round)
-    TOUR->>KAFKA: Publish: MatchScheduled { fixtures: [...] }
-    KAFKA->>NOTIFY: Consume MatchScheduled
-    NOTIFY->>Team: FCM Push: "Fixture released! Your first match: Saturday 10AM vs Mumbai Stars"
+    Note over IM: Auto-conclude after 12 questions or full coverage
+    IM->>ORCH: synthesizeFeedback(allQA, allScores)
+    ORCH-->>IM: feedbackSummary
+    IM->>API: {status: COMPLETED, summary}
 ```
 
 ---
 
-## SD-4: Sponsor Match & Branding Activation
+## 3. Automated Scoring & Feedback Generation
 
 ```mermaid
 sequenceDiagram
-    actor Org as Organizer
-    participant GW as API Gateway
-    participant SP_SVC as Sponsorship Service
-    participant KAFKA as Apache Kafka
-    participant SP_AI as Sponsorship Matching AI Service
-    participant PG as PostgreSQL
-    actor Sponsor as Sponsor (Mobile/Web)
-    participant NOTIFY as Notification Service
-    participant SC as Live Scoring Service
+    participant IM as Interview Manager
+    participant ORCH as AI Orchestrator
+    participant FS as Feedback Synthesizer
+    participant SS as Scoring Service
+    participant TC as Cost Tracker
+    participant AL as Audit Logger
+    participant DB as Data Store
 
-    Org->>GW: POST /sponsorships/requirements { tournamentId, tiers: ["Title","Co-Sponsor"], expectedReach: 5000 }
-    GW->>SP_SVC: Forward request
-    SP_SVC->>PG: INSERT INTO sponsorship_requirements (tournament_id, tiers, expected_reach)
-    SP_SVC->>KAFKA: Publish: SponsorshipRequirementPosted { requirementId, tournamentId }
-    
-    KAFKA->>SP_AI: Consume SponsorshipRequirementPosted
-    SP_AI->>SP_AI: Run matching algorithm (location, audience, category, budget score)
-    SP_AI->>SP_SVC: POST /internal/matches { requirementId, sponsorIds: [101, 204], matchScores }
-    SP_SVC->>KAFKA: Publish: SponsorMatchFound { sponsorIds: [101, 204] }
-    KAFKA->>NOTIFY: Consume SponsorMatchFound
-    NOTIFY->>Sponsor: FCM Push + Email: "A local T20 tournament near you is looking for sponsors! ₹2L reach."
-    
-    Sponsor->>GW: POST /sponsorships/deals { requirementId, tier: "Title", brandingAssets: [logo_url] }
-    GW->>SP_SVC: Forward request
-    SP_SVC->>PG: INSERT INTO sponsorship_deals (requirement_id, sponsor_id, tier, status="ACTIVE")
-    SP_SVC->>SP_SVC: Auto-generate digital sponsorship contract (PDF)
-    SP_SVC->>NOTIFY: Send contract to Organizer + Sponsor
-    SP_SVC-->>GW: 201 Created { dealId, contractUrl }
-    GW-->>Sponsor: 201 Created
+    Note over IM: Interview COMPLETED — all Q&A collected
 
-    Note over SP_SVC,SC: Branding Activation on Live Scorecard
-    SP_SVC->>SC: PUT /matches/{id}/sponsor-overlay { sponsorLogoUrl, tier: "TITLE" }
-    SC->>SC: Inject sponsor branding into scorecard template
-    Note over SC: All fans see sponsor logo on live scorecard 🏏
+    IM->>SS: calculateScoreSummary(allDimensionScores)
+    SS->>SS: weightedAverage(tech, comm, ps, role)
+    SS->>SS: mapToConfidence(weightedAvg → 0-100)
+    SS->>SS: mapToRecommendation(confidence)
+    Note over SS: ≥80: STRONG_HIRE<br/>≥60: HIRE<br/>≥40: MAYBE<br/><40: NO_HIRE
+
+    SS-->>IM: {confidence, recommendation}
+
+    IM->>ORCH: synthesizeFeedback(allQA, scores, role)
+    ORCH->>ORCH: buildPrompt(feedbackTemplate, context)
+    ORCH->>FS: execute(prompt)
+    Note over FS: Structured Summarization
+    FS-->>ORCH: {impression, strengths, concerns, quotes, rationale}
+    ORCH->>TC: trackTokens(tokens)
+    ORCH->>AL: logEntry(synthesizer, prompt, response)
+    ORCH-->>IM: feedbackSummary
+
+    IM->>DB: saveScoreSummary(interviewId, scores, recommendation)
+    IM->>DB: saveFeedbackSummary(interviewId, summary)
+    IM->>DB: updateStatus(interviewId, COMPLETED)
+```
+
+---
+
+## 4. Human-in-the-Loop Review
+
+```mermaid
+sequenceDiagram
+    actor R as Reviewer
+    participant UI as Review Page
+    participant API as API Route
+    participant RS as Review Service
+    participant AL as Audit Logger
+    participant DB as Data Store
+
+    R->>UI: Open review for Interview #123
+    UI->>API: GET /api/interviews/123/review
+    API->>DB: getInterview(123) + getScores() + getQA()
+    DB-->>API: {interview, scores, qa_pairs, summary}
+    API-->>UI: Full review data
+    UI-->>R: Display Q&A + AI scores + recommendation
+
+    R->>R: Review each Q&A pair with AI analysis
+
+    alt Approve (Accept AI Scores)
+        R->>UI: Click "Approve"
+        UI->>API: POST /api/interviews/123/review {action: APPROVE}
+        API->>RS: submitDecision(APPROVE, reviewerName)
+        RS->>DB: saveDecision(APPROVED, reviewer, timestamp)
+        RS->>AL: logEntry(review, APPROVED, reviewer)
+    else Adjust (Modify Scores)
+        R->>UI: Modify tech_depth: 6→8, add justification
+        UI->>API: POST /api/interviews/123/review {action: ADJUST, adjustments: [...], notes}
+        API->>RS: submitDecision(ADJUST, adjustments, notes, reviewer)
+        RS->>DB: saveAdjustedScores(adjustments)
+        RS->>RS: recalculateRecommendation(newScores)
+        RS->>DB: saveDecision(ADJUSTED, reviewer, notes, timestamp)
+        RS->>AL: logEntry(review, ADJUSTED, details)
+    else Reject (Override Recommendation)
+        R->>UI: Override HIRE→NO_HIRE + "Concerns about X..."
+        UI->>API: POST /api/interviews/123/review {action: REJECT, decision: NO_HIRE, notes}
+        API->>RS: submitDecision(REJECT, NO_HIRE, notes, reviewer)
+        RS->>DB: saveDecision(REJECTED, reviewer, notes, timestamp)
+        RS->>AL: logEntry(review, REJECTED, overrideReason)
+    end
+
+    RS-->>API: {status: REVIEWED, finalDecision}
+    API-->>UI: Review submitted
+    UI-->>R: Confirmation + updated status
 ```

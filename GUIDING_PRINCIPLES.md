@@ -1,188 +1,257 @@
-# Guiding Principles — CricZone: Local Cricket Community Platform
+# Guiding Principles — AI-Assisted Interview Screening
 
-> This document demonstrates how **SOLID**, **KISS**, and **YAGNI** principles are applied concretely to the CricZone platform's design decisions.
-
-## Table of Contents
-1. [SOLID Principles](#solid-principles)
-2. [KISS — Keep It Simple, Stupid](#kiss--keep-it-simple-stupid)
-3. [YAGNI — You Aren't Gonna Need It](#yagni--you-arent-gonna-need-it)
-4. [Summary Matrix](#summary-matrix)
+> Concrete application of SOLID, KISS, and YAGNI to the interview screening domain.
 
 ---
 
-## SOLID Principles
+## 1. SOLID Principles
 
-### S — Single Responsibility Principle (SRP)
+### S — Single Responsibility Principle
 
-> *"A class/service should have one, and only one, reason to change."*
+**Principle:** Each module/class should have one reason to change.
 
-**Application in Design:**
+**Application in Our System:**
 
-| Component | Responsibility | What It Does NOT Do |
-|-----------|---------------|-------------------|
-| `LiveScoringService` | Capture ball events, compute scorecard state, cache live score | Does NOT calculate career stats or player rankings |
-| `PlayerAnalyticsService` | Aggregate career stats, compute PPS, generate AI insights | Does NOT send notifications (delegates to `NotificationService`) |
-| `NotificationService` | Multi-channel delivery (Push/WhatsApp/SMS/Email) | Does NOT decide what events to notify — event-driven from Kafka |
-| `SponsorshipMatchingService` | Run AI matching algorithm between tournaments and sponsors | Does NOT manage deals, contracts, or branding — that is `SponsorshipService` |
+| Module | Single Responsibility | What It Does NOT Do |
+|--------|----------------------|-------------------|
+| `Question Generator Agent` | Generate questions from role/skills/JD | Does NOT score responses or track costs |
+| `Response Evaluator Agent` | Score a single response on rubric dimensions | Does NOT decide the next question or generate feedback |
+| `Adaptive Follow-up Agent` | Decide next interview action based on depth + coverage | Does NOT evaluate responses or generate questions from scratch |
+| `Cost Tracker` | Track tokens and calculate costs | Does NOT log audit entries or manage interview state |
+| `Audit Logger` | Record AI operations as immutable log entries | Does NOT calculate costs or make interview decisions |
+| `Interview Store` | Persist and retrieve interview data | Does NOT contain business logic for scoring or adaptation |
 
-**Concrete Example:**
-```
-❌ Bad: LiveScoringService.recordBall() also updates player career stats
-        and sends push notifications to fans.
+**Why This Matters Here:** When we need to change the scoring rubric, only the Response Evaluator changes. When pricing models update, only the Cost Tracker changes. No ripple effects.
 
-✅ Good: LiveScoringService publishes "MatchCompleted" to Kafka.
-         PlayerAnalyticsService consumes it to update career stats.
-         NotificationService consumes it to send push notifications.
-```
-**Benefit:** When we change how PPS is calculated (new AI model), only `PlayerAnalyticsService` changes. Scoring logic, notifications — all untouched.
+**Anti-Pattern Avoided:** A monolithic `InterviewService` that generates questions, evaluates responses, tracks costs, and logs audits in one 500-line file.
 
 ---
 
-### O — Open/Closed Principle (OCP)
+### O — Open/Closed Principle
 
-> *"Software entities should be open for extension, but closed for modification."*
+**Principle:** Open for extension, closed for modification.
 
-**Application in Design:**
-
-1. **Notification Channels**: New channels (Telegram, Signal, In-App banner) are added by implementing a `NotificationChannel` interface — no changes to existing `NotificationService` routing logic.
+**Application:**
 
 ```
-Interface: NotificationChannel
-├── FCMPushChannel (existing — Android/iOS)
-├── WhatsAppChannel (existing — India-first)
-├── SMSChannel (existing — Twilio/MSG91)
-├── EmailChannel (existing)
-└── TelegramChannel (NEW — added without modifying existing code)
+// AI Agent Interface — open for new agents without modifying existing code
+class AIAgent {
+  execute(input) → output    // Interface
+}
+
+// Existing agents implement this interface
+class QuestionGenerator extends AIAgent { ... }
+class ResponseEvaluator extends AIAgent { ... }
+class AdaptiveFollowup extends AIAgent { ... }
+
+// NEW agent added without touching existing agents:
+class IntegrityMonitor extends AIAgent { ... }
+
+// Orchestrator works with any AIAgent — no switch/case needed
+orchestrator.registerAgent('integrity', new IntegrityMonitor())
 ```
 
-2. **PPS Scoring Algorithm**: The `PlayerAnalyticsService` uses a pluggable `PPSStrategy` interface. Replacing the PPS formula (e.g., adding fielding weight) requires a new `PPSStrategy` implementation — existing code unchanged.
-
-3. **Extra Type Detection in Scoring**: New extra types (e.g., Penalty runs from DRS) are added by extending an `ExtraType` enum and adding a handler — the core ball event recording loop stays unchanged.
+**Concrete Example:** Adding the Integrity Monitor (stretch goal) required:
+1. ✅ Creating a new `IntegrityMonitor` class
+2. ✅ Registering it with the Orchestrator
+3. ❌ No changes to QuestionGenerator, ResponseEvaluator, or any existing agent
 
 ---
 
-### L — Liskov Substitution Principle (LSP)
+### L — Liskov Substitution Principle
 
-> *"Subtypes must be substitutable for their base types."*
+**Principle:** Subtypes must be substitutable for their base types.
 
-**Application in Design:**
-
-1. **Tournament Formats**: All tournament formats (T20, ODI, Box Cricket, One-Day League) are configured via a `TournamentFormat` enum and a `FormatConfig` object (overs, innings count, powerplay rules). The scheduler, scoring engine, and analytics modules work uniformly with any format.
-
-2. **Notification Channels**: Any `NotificationChannel` implementation can be substituted. Whether we send Push, WhatsApp, or SMS, the calling code in `NotificationService` does not change — it calls `channel.send(message)` uniformly.
-
----
-
-### I — Interface Segregation Principle (ISP)
-
-> *"Clients should not be forced to depend on interfaces they do not use."*
-
-**Application in Design:**
-
-1. **Role-Specific API Views**: Instead of one monolithic `/dashboard`, we expose:
-   - `GET /analytics/kpis` — Organizer tournament stats
-   - `GET /players/{id}/stats` — Player self-service + Fan view
-   - `GET /sponsorships/{id}/roi` — Sponsor-only ROI dashboard
-   - `GET /stores/{id}/offers` — Fan/Player offer browsing
-
-   A Fan app never needs to call `/sponsorships/{id}/roi`. A Scorer never calls Store APIs.
-
-2. **Kafka Topic Subscriptions**: Services subscribe only to events they need:
-   - `NotificationService` → subscribes to `WicketFallen`, `MatchCompleted`, `OfferPublished`
-   - `PlayerAnalyticsService` → subscribes to `MatchCompleted` only
-   - `CommunityService` → subscribes to `MatchCompleted` (auto-post match summary)
-   - `ReportingService` → subscribes to `MatchCompleted`, `TournamentStarted`
-
-   No service processes events it doesn't care about.
-
----
-
-### D — Dependency Inversion Principle (DIP)
-
-> *"High-level modules should not depend on low-level modules. Both should depend on abstractions."*
-
-**Application in Design:**
-
-1. **Geo-Search Provider**: `StoreService` depends on a `GeoSearchProvider` interface, not directly on Google Maps. This allows swapping to Mapbox or HERE Maps without changing store discovery logic.
+**Application:**
 
 ```
-StoreService
-    → depends on → GeoSearchProvider (interface)
-                       ├── GoogleMapsGeoProvider (implementation)
-                       ├── MapboxGeoProvider (implementation)
-                       └── MockGeoProvider (for testing)
+// Mock AI Engine and Real AI Engine are interchangeable
+class AIEngine {
+  async call(prompt) → response
+}
+
+class MockAIEngine extends AIEngine {
+  async call(prompt) {
+    return simulatedResponse(prompt)  // Returns realistic mock data
+  }
+}
+
+class GeminiAIEngine extends AIEngine {
+  async call(prompt) {
+    return await geminiAPI.generate(prompt)  // Calls real LLM
+  }
+}
+
+// Orchestrator doesn't know which engine it's using
+const engine = process.env.USE_MOCK ? new MockAIEngine() : new GeminiAIEngine()
+orchestrator.setEngine(engine)  // Works with either
 ```
 
-2. **Payment Gateway**: `GroundBookingService` depends on a `PaymentGateway` interface. Razorpay's implementation can be swapped for PayU or Cashfree without changing booking business logic.
-
-3. **AI PPS Engine**: `PlayerAnalyticsService` calls a `PPSCalculator` interface. The underlying model (rule-based v1 → ML-based v2) is swapped by registering a new implementation. Business analytics code stays unchanged.
+**Why This Matters:** The prototype uses `MockAIEngine`. When a real API key is available, switching to `GeminiAIEngine` requires changing ONE config variable, not refactoring the application.
 
 ---
 
-## KISS — Keep It Simple, Stupid
+### I — Interface Segregation Principle
 
-> *"Most systems work best if they are kept simple rather than made complicated."*
+**Principle:** Clients should not depend on interfaces they don't use.
 
-### KISS Applications
-
-| Decision | Simple Choice | Avoided Complexity |
-|----------|--------------|-------------------|
-| **Live Score Delivery** | WebSocket push from Live Scoring Service via Redis pub/sub | Avoided Server-Sent Events + Long Polling + WebSocket trio — single protocol is enough |
-| **PPS v1 Algorithm** | Weighted rule-based formula (Batting 40% + Bowling 40% + Fielding 20%) | Avoided real-time neural network — a deterministic formula is transparent, debuggable, and sufficient for v1 |
-| **Geo-Search** | PostGIS `ST_DWithin()` for radius queries | Avoided Elasticsearch geo-sharding — PostGIS on PostgreSQL is simpler and sufficient for city-scale data |
-| **OTP Auth** | Firebase Phone Auth (managed) | Avoided building custom OTP generation and rate-limiting — use proven managed service |
-| **Fixture Scheduling** | Prebuilt round-robin algorithm | Avoided ML-based schedule optimizer — cricket tournament scheduling is a well-solved combinatorial problem |
-| **Score Commentary** | Template-based commentary strings with ball event data | Avoided LLM real-time generation — templates are predictable, cost-free, and < 10ms |
-
-### KISS Example — Live Scorecard Architecture
+**Application:**
 
 ```
-❌ Complex: Real-time event streaming pipeline (Kafka → Flink → 
-            WebSocket cluster) for every ball event.
+// BAD: One fat interface
+InterviewService {
+  createInterview()
+  generateQuestions()
+  evaluateResponse()
+  synthesizeFeedback()
+  trackCosts()
+  logAudit()
+  reviewDecision()
+}
 
-✅ Simple:  Scorer HTTP POST → LiveScoringService → Redis update → 
-            WebSocket push to active viewers.
-            Fans with no active session get the latest via REST 
-            GET /matches/{id}/scorecard (Redis cache hit, < 50ms).
+// GOOD: Segregated interfaces
+InterviewSetup     { createInterview(), generateQuestions() }
+InterviewSession   { submitResponse(), getNextQuestion() }
+ScoringService     { evaluateResponse(), synthesizeFeedback() }
+CostService        { trackTokens(), getCostBreakdown() }
+AuditService       { logEntry(), getAuditTrail() }
+ReviewService      { submitDecision(), getReviewStatus() }
 ```
-**Why:** Most fans don't watch every ball live. A REST + Redis cache serves the majority; WebSocket serves active live viewers. No need for complex streaming infrastructure at MVP scale.
+
+**Result:** The Dashboard page only imports `CostService` and `InterviewSetup` — it never loads scoring or audit logic.
 
 ---
 
-## YAGNI — You Aren't Gonna Need It
+### D — Dependency Inversion Principle
 
-> *"Don't add functionality until it is necessary."*
+**Principle:** High-level modules should not depend on low-level modules. Both should depend on abstractions.
 
-### What We Deliberately Excluded
+**Application:**
 
-| Feature Considered | Decision | Rationale |
-|-------------------|----------|-----------| 
-| **Video Highlights Generation** | ❌ Deferred to Phase 3 | Massive storage and processing costs. Start with text commentary; add video (Douyin-style) when user engagement and revenue warrant it. |
-| **Fantasy Cricket League** | ❌ Not built (v1) | High complexity (points engine, full match data dependency, legal scrutiny). US/China-inspired but deferred until core scoring is stable. |
-| **Monetization / In-App Purchases** | ❌ Out of scope (per requirements) | Explicitly excluded. Sponsorship matching is free matching only. |
-| **DRS / Technology Reviews** | ❌ Optional flag, not built | Most local cricket cannot afford Hawk-Eye/UltraEdge. Available as a configurable flag for premium tournaments only. |
-| **Multi-Language / i18n** | ❌ Deferred to Phase 2 | Build for English + Hindi first. Framework hooks added but translations deferred until city-specific demand is confirmed. |
-| **Global Tournament Support** | ❌ Deferred | Initially metro India only. Architecture is multi-region ready but not deployed globally at launch. |
-| **Wearable Sensor Integration** | ❌ Not built | Speed trackers, smart bat sensors — too expensive and niche for local cricket target market. |
+```
+// High-level: AI Orchestrator
+// Low-level: In-Memory Store, SQLite Store, PostgreSQL Store
 
-### Architecture YAGNI Decisions
+// Abstraction (interface)
+DataStore {
+  saveInterview(data)
+  getInterview(id)
+  getAllInterviews()
+}
 
-| Decision | What We Built | What We Avoided |
-|----------|--------------|-----------------| 
-| **Service Mesh** | Direct inter-service REST + Kafka | Avoided Istio — unnecessary at < 11 services; add when scale demands it |
-| **GraphQL** | REST with well-designed endpoints | Avoided GraphQL federation — REST is simpler for mobile-first consumer; add later if frontend demands |
-| **Real-time ML Serving** | Batch PPS calculation post-match | Avoided real-time inference per ball — PPS doesn't need sub-second updates |
+// Low-level implementations
+InMemoryStore implements DataStore { ... }    // Prototype
+SQLiteStore implements DataStore { ... }      // Demo
+PostgresStore implements DataStore { ... }    // Production
+
+// High-level depends on abstraction, not implementation
+class Orchestrator {
+  constructor(store: DataStore) { ... }  // Injected
+}
+```
 
 ---
 
-## Summary Matrix
+## 2. KISS — Keep It Simple, Stupid
 
-| Principle | Key Theme | How Applied | Primary Benefit |
-|-----------|-----------|-------------|-----------------| 
-| **SRP** | One reason to change | Live Scoring, Analytics, Notifications are separate services | Independent scaling, deployment, and team ownership |
-| **OCP** | Extend, don't modify | Notification channels, PPS strategy, extra type handlers | New features without breaking existing stability |
-| **LSP** | Substitutability | All tournament formats and notification channels treated uniformly | Consistent logic regardless of format or channel |
-| **ISP** | Narrow interfaces | Role-specific API endpoints, selective Kafka subscriptions | Reduced coupling, smaller blast radius |
-| **DIP** | Depend on abstractions | GeoSearchProvider, PaymentGateway, PPSCalculator interfaces | Swappable infrastructure, testable business logic |
-| **KISS** | Simplicity wins | Template commentary, rule-based PPS, Redis + WebSocket | Lower operational cost, easier to debug and maintain |
-| **YAGNI** | Build only what's needed | No fantasy league, no video processing, no global deployment | Faster MVP, optimized for metro India launch budget |
+### Applied Simplifications
+
+| Area | Complex Approach (Avoided) | Simple Approach (Chosen) | Rationale |
+|------|---------------------------|-------------------------|-----------|
+| **Data Storage** | PostgreSQL + Redis + S3 | In-memory JavaScript objects | Zero-config, perfect for prototype |
+| **AI Integration** | LangChain + Vector DB + RAG pipeline | Direct prompt templates with mock engine | MVP doesn't need retrieval-augmented generation |
+| **Auth** | OAuth 2.0 + JWT + Refresh tokens | Session-based mock login | Demonstrates RBAC concept without infra |
+| **State Management** | Redux + middleware + selectors | React Context + useReducer | Sufficient for single-page interview state |
+| **Deployment** | Docker + K8s + CI/CD | `npm run dev` local development | Judges evaluate the product, not the infrastructure |
+| **Cost Calculation** | Real-time API pricing lookup | Static pricing config object | Prices rarely change; static is accurate enough |
+| **Charting** | D3.js or Chart.js with 15 chart types | Simple CSS bar charts + SVG | MVP needs 2-3 chart types, not a chart library |
+
+### KISS in Prompt Design
+
+```
+// COMPLEX (Avoided):
+"Using advanced reasoning capabilities, synthesize a multi-dimensional
+analysis incorporating Bloom's taxonomy levels, Webb's depth of knowledge
+framework, and standardized competency mapping matrices to evaluate..."
+
+// SIMPLE (Chosen):
+"Score the candidate's response on a scale of 0-10 for each dimension.
+Think step-by-step. Be calibrated: average responses score 4-6."
+```
+
+---
+
+## 3. YAGNI — You Aren't Gonna Need It
+
+### Features Explicitly Deferred
+
+| Feature | Why It's Tempting | Why We Don't Need It (MVP) |
+|---------|------------------|--------------------------|
+| **Video Interview** | Modern platforms support video | Text-based demonstrates AI logic equally well |
+| **Multi-Language** | Global applicability | English-only covers the demo use case |
+| **ATS Integration** | Real-world requirement | No ATS to integrate with during kata |
+| **PDF Report Export** | Professional output | Screen display is sufficient for demo |
+| **Email Notifications** | Real-world workflow | Not needed for single-user prototype |
+| **Candidate Login** | Two-sided marketplace | Interviewer-only view sufficient for MVP |
+| **Question Version History** | Audit completeness | Single version per interview is enough |
+| **A/B Testing Prompts** | Prompt optimization | One prompt per agent is enough for demo |
+| **Rate Limiting** | Production safety | Single user, no abuse scenario |
+| **Caching Layer** | Performance optimization | In-memory store is already fast |
+
+### YAGNI Decision Framework
+
+```
+Before adding any feature, ask:
+1. Is it in the "Must Have" list?           → Yes: Build it
+2. Does the jury explicitly evaluate it?    → Yes: Build it  
+3. Does it make the demo more impressive?   → Maybe: Time-box to 30 min
+4. Is it a "production-ready" concern?      → No: Document it, don't build it
+```
+
+---
+
+## 4. Additional Design Principles
+
+### DRY — Don't Repeat Yourself
+
+**Application:** All AI agents share the same orchestration pipeline:
+```
+buildPrompt() → callEngine() → parseResponse() → logAudit() → trackCost()
+```
+This pipeline is implemented ONCE in the Orchestrator. Each agent only provides its unique prompt template and response parser.
+
+### Separation of Concerns
+
+**Application:** The interview UI component knows NOTHING about:
+- How prompts are constructed
+- What LLM model is being used
+- How tokens are counted
+- Where audit logs are stored
+
+It only knows: "send response, receive next question and scores."
+
+### Fail Fast
+
+**Application:**
+- Invalid interview config → reject at API boundary with clear error message
+- Missing required fields → 400 before any AI call is made
+- AI response doesn't match expected schema → fallback to default behavior, log error
+
+### Convention Over Configuration
+
+**Application:**
+- Question categories are always: `TECHNICAL, BEHAVIORAL, PROBLEM_SOLVING, SYSTEM_DESIGN`
+- Score dimensions are always: `technical_depth, communication, problem_solving, role_alignment`
+- No configuration needed to use these — they're convention
+
+---
+
+## 5. Principle Violation Examples (What We Avoided)
+
+| Principle | Violation Example | Our Correct Approach |
+|-----------|------------------|---------------------|
+| SRP | One function that generates questions, evaluates, scores, and logs | Separate agents with single responsibilities |
+| OCP | `if (agentType === 'generator') ... else if (agentType === 'scorer') ...` | Agent interface with polymorphic dispatch |
+| KISS | Using LangChain + Pinecone for a 10-question interview | Direct prompt templates with mock engine |
+| YAGNI | Building video analysis when text-only is sufficient | Text-based MVP with video documented as future |
+| DRY | Copy-pasting audit logging code into each agent | Centralized observer in the orchestrator |

@@ -1,125 +1,146 @@
-# Activity Diagrams — CricZone: Local Cricket Community Platform
-
-> Four activity diagrams covering the most critical workflows in CricZone.
+# Activity Diagram — AI-Assisted Interview Screening
 
 ---
 
-## AD-1: Tournament Setup & Scheduling Workflow
+## 1. Complete Interview Lifecycle
 
 ```mermaid
 flowchart TD
-    START([Organizer Creates Tournament]) --> FILL_DETAILS[Fill Tournament Details\nName, Format, City, Max Teams]
-    FILL_DETAILS --> OPEN_REG[Set Registration Open\nShare Registration Link]
-    OPEN_REG --> TEAMS_JOIN{Teams Registering}
-    TEAMS_JOIN -->|Registration Received| REVIEW[Organizer Reviews Team Registration]
-    REVIEW --> APPROVE{Approve Team?}
-    APPROVE -->|Yes| TEAM_CONFIRMED[Team Confirmed\nNotify Team Captain]
-    APPROVE -->|No| TEAM_REJECTED[Team Rejected\nNotify with Reason]
-    TEAM_CONFIRMED --> TEAMS_JOIN
-    TEAM_REJECTED --> TEAMS_JOIN
-    TEAMS_JOIN -->|Registration Deadline Reached| MIN_TEAMS{Enough Teams?}
-    MIN_TEAMS -->|No - < 4 teams| CANCEL[Cancel Tournament\nNotify All Registered Teams]
-    MIN_TEAMS -->|Yes| SCHEDULE_MODE{Schedule Mode?}
-    SCHEDULE_MODE -->|Auto| AUTO_GEN[System Auto-Generates\nRound Robin / Knockout Fixtures]
-    SCHEDULE_MODE -->|Manual| MANUAL[Organizer Manually\nCreates Match Schedule]
-    AUTO_GEN --> ASSIGN_GROUNDS[Assign Grounds & Umpires\nto Each Fixture]
-    MANUAL --> ASSIGN_GROUNDS
-    ASSIGN_GROUNDS --> PUBLISH[Publish Fixtures\nNotify All Players & Fans]
-    PUBLISH --> TOURNAMENT_LIVE([Tournament Now Live 🏆])
-    CANCEL --> END([End])
+    START([Start]) --> CONFIG[Hiring Manager configures interview<br/>Role + Skills + Level + JD + Resume]
+    CONFIG --> VALIDATE{Valid configuration?}
+    VALIDATE -->|No| ERROR_CONFIG[Show validation errors]
+    ERROR_CONFIG --> CONFIG
+    VALIDATE -->|Yes| GENERATE[AI generates question bank<br/>Question Generator Agent]
+    GENERATE --> LOG_GEN[Log: prompt + response + tokens]
+    LOG_GEN --> REVIEW_Q[Manager reviews question bank]
+    REVIEW_Q --> EDIT{Edit questions?}
+    EDIT -->|Yes| MODIFY[Add / Edit / Remove questions]
+    MODIFY --> REVIEW_Q
+    EDIT -->|No| CONFIRM[Manager confirms → Status: READY]
+    CONFIRM --> SHARE[Share interview link with candidate]
+    SHARE --> CANDIDATE_JOIN[Candidate opens interview]
+    CANDIDATE_JOIN --> START_INT[Interview begins → Status: IN_PROGRESS]
+    START_INT --> PRESENT_Q[Present question to candidate]
+
+    PRESENT_Q --> WAIT_RESP[Wait for candidate response]
+    WAIT_RESP --> RECEIVE[Receive candidate response]
+    RECEIVE --> EVALUATE[AI evaluates response<br/>Response Evaluator Agent]
+    EVALUATE --> LOG_EVAL[Log: scores + tokens + cost]
+    LOG_EVAL --> DEPTH{Check depth score}
+
+    DEPTH -->|"Depth ≤ 2"| EASIER[Generate easier follow-up<br/>Adaptive Agent]
+    DEPTH -->|"Depth = 3"| COVERAGE{Check topic coverage}
+    DEPTH -->|"Depth ≥ 4"| DEEPER[Generate deeper follow-up<br/>Adaptive Agent]
+
+    COVERAGE -->|"All topics ≥ 60%"| CONCLUDE_CHECK{Questions ≥ 8?}
+    COVERAGE -->|"Gaps remain"| NEW_TOPIC[Switch to least-covered topic<br/>Adaptive Agent]
+
+    CONCLUDE_CHECK -->|Yes| CONCLUDE[Conclude interview]
+    CONCLUDE_CHECK -->|No| NEW_TOPIC
+
+    EASIER --> LOG_ADAPT[Log: adaptation + tokens]
+    DEEPER --> LOG_ADAPT
+    NEW_TOPIC --> LOG_ADAPT
+
+    LOG_ADAPT --> MAX_CHECK{Questions ≥ 12?}
+    MAX_CHECK -->|Yes| CONCLUDE
+    MAX_CHECK -->|No| PRESENT_Q
+
+    CONCLUDE --> SYNTHESIZE[AI generates feedback summary<br/>Feedback Synthesizer Agent]
+    SYNTHESIZE --> CALC_SCORE[Calculate overall scores<br/>& recommendation]
+    CALC_SCORE --> LOG_SYNTH[Log: summary + tokens + cost]
+    LOG_SYNTH --> COMPLETE[Interview COMPLETED]
+    COMPLETE --> NOTIFY_REV[Notify reviewer: interview ready]
+
+    NOTIFY_REV --> OPEN_REVIEW[Reviewer opens review page]
+    OPEN_REVIEW --> VIEW_QA[View Q&A pairs with AI scores]
+    VIEW_QA --> ASSESS[Reviewer assesses AI recommendation]
+    ASSESS --> DECISION{Reviewer decision}
+
+    DECISION -->|Approve| APPROVE[Accept AI scores as-is]
+    DECISION -->|Adjust| ADJUST[Modify scores + add justification]
+    DECISION -->|Reject| REJECT[Override recommendation + reason]
+
+    APPROVE --> LOG_REVIEW[Log: review decision + attribution]
+    ADJUST --> RECALC[Recalculate recommendation]
+    RECALC --> LOG_REVIEW
+    REJECT --> LOG_REVIEW
+
+    LOG_REVIEW --> FINAL[Status: REVIEWED<br/>Final decision recorded]
+    FINAL --> END([End])
+
+    style GENERATE fill:#8b5cf6,color:#fff
+    style EVALUATE fill:#8b5cf6,color:#fff
+    style EASIER fill:#8b5cf6,color:#fff
+    style DEEPER fill:#8b5cf6,color:#fff
+    style NEW_TOPIC fill:#8b5cf6,color:#fff
+    style SYNTHESIZE fill:#8b5cf6,color:#fff
+    style LOG_GEN fill:#10b981,color:#fff
+    style LOG_EVAL fill:#10b981,color:#fff
+    style LOG_ADAPT fill:#10b981,color:#fff
+    style LOG_SYNTH fill:#10b981,color:#fff
+    style LOG_REVIEW fill:#10b981,color:#fff
 ```
 
 ---
 
-## AD-2: Ball-by-Ball Live Scoring Workflow
+## 2. AI Question Generation Workflow
 
 ```mermaid
 flowchart TD
-    START([Scorer Opens Match]) --> VERIFY{Scorer Authorized\nfor This Match?}
-    VERIFY -->|No| DENY[Access Denied\nContact Organizer]
-    VERIFY -->|Yes| TOSS[Enter Toss Result\nChoose Bat/Bowl Team]
-    TOSS --> SELECT_OPENERS[Select Opening Batsmen\n& Opening Bowler]
-    SELECT_OPENERS --> BALL_LOOP{Ball Scoring Loop}
+    START([Input: Role + Skills + Level + JD + Resume]) --> PARSE[Parse resume text<br/>Extract: skills, experience, education]
+    PARSE --> IDENTIFY_GAPS[Compare resume skills vs JD requirements<br/>Identify gaps and overlaps]
+    IDENTIFY_GAPS --> BUILD_PROMPT[Build prompt from template<br/>Inject: role, skills, gaps, highlights]
+    BUILD_PROMPT --> CALL_LLM[Call AI Engine<br/>Few-Shot + Structured Output]
+    CALL_LLM --> PARSE_RESPONSE[Parse JSON response<br/>Extract question array]
+    PARSE_RESPONSE --> VALIDATE_SCHEMA{Schema valid?}
 
-    BALL_LOOP --> SCORE_BALL[Scorer Taps Ball Outcome\nRuns / Extra / Wicket]
-    SCORE_BALL --> VALIDATE{Valid Ball?}
-    VALIDATE -->|No - Over limit exceeded| BALL_LOOP
-    VALIDATE -->|Yes| UPDATE_SCORECARD[Update Live Scorecard\nRedis Cache + DB]
-    UPDATE_SCORECARD --> PUSH[WebSocket Push to Fans\nLive Score Update]
-    PUSH --> CHECK_MILESTONE{Milestone Reached?\n50/100/Over/Wicket}
-    CHECK_MILESTONE -->|Yes| NOTIFY[Send Push Notification\nto Subscribed Fans]
-    CHECK_MILESTONE -->|No| CHECK_OVER{Over Complete?}
-    NOTIFY --> CHECK_OVER
-    CHECK_OVER -->|No| BALL_LOOP
-    CHECK_OVER -->|Yes| CHANGE_BOWLER[Scorer Selects\nNext Bowler]
-    CHANGE_BOWLER --> CHECK_ALL_OUT{All Out or\nOvers Complete?}
-    CHECK_ALL_OUT -->|No| BALL_LOOP
-    CHECK_ALL_OUT -->|Yes| INNINGS_DONE[End Innings\nCalculate Total]
-    INNINGS_DONE --> SECOND{Second Innings?}
-    SECOND -->|Yes| SELECT_OPENERS
-    SECOND -->|No| RESULT[Declare Match Result\nPublish to Kafka]
-    RESULT --> LOCK[Lock Scorecard\nUpdate Player Stats]
-    LOCK --> MATCH_DONE([Match Complete ✅])
-    DENY --> END([End])
+    VALIDATE_SCHEMA -->|No| FALLBACK[Use fallback question bank<br/>Generic role-based questions]
+    VALIDATE_SCHEMA -->|Yes| CHECK_COUNT{10-15 questions?}
+
+    CHECK_COUNT -->|Too few| PAD[Add generic questions<br/>to reach minimum 10]
+    CHECK_COUNT -->|Too many| TRIM[Remove lowest-priority<br/>to max 15]
+    CHECK_COUNT -->|Just right| COVERAGE_CHECK{All categories covered?}
+
+    PAD --> COVERAGE_CHECK
+    TRIM --> COVERAGE_CHECK
+
+    COVERAGE_CHECK -->|Missing categories| ADD_CATEGORY[Add 1 question per<br/>missing category]
+    COVERAGE_CHECK -->|All covered| CALIBRATE[Calibrate depth targets<br/>based on seniority level]
+
+    ADD_CATEGORY --> CALIBRATE
+    FALLBACK --> CALIBRATE
+
+    CALIBRATE --> SEQUENCE[Assign sequence numbers<br/>Order: Technical → Problem Solving → Behavioral → System Design]
+    SEQUENCE --> OUTPUT([Output: Ordered Question Bank])
+
+    style CALL_LLM fill:#8b5cf6,color:#fff
+    style FALLBACK fill:#f59e0b,color:#fff
 ```
 
 ---
 
-## AD-3: Player Profile & Analytics Flow
+## 3. Cost Tracking Workflow
 
 ```mermaid
 flowchart TD
-    START([Match Completed\nKafka: MatchCompleted]) --> CONSUME[Player Analytics Service\nConsumes Event]
-    CONSUME --> FETCH_BATTING[Fetch Batting Card\nfor Each Player]
-    FETCH_BATTING --> AGG_BATTING[Aggregate Batting Stats\nRuns, SR, Avg, 50s/100s]
-    AGG_BATTING --> FETCH_BOWLING[Fetch Bowling Card\nfor Each Player]
-    FETCH_BOWLING --> AGG_BOWLING[Aggregate Bowling Stats\nWickets, Economy, BBI]
-    AGG_BOWLING --> FETCH_FIELDING[Fetch Fielding Events\nCatches, Run-Outs, Stumpings]
-    FETCH_FIELDING --> UPDATE_CAREER[Update player_career_stats\nIn PostgreSQL]
-    UPDATE_CAREER --> COMPUTE_PPS[Run PPS Algorithm\nWeighted: Batting 40% + Bowling 40% + Fielding 20%]
-    COMPUTE_PPS --> PPS_GRADE{Assign Grade}
-    PPS_GRADE -->|85-100| ELITE[Grade: Elite ⭐⭐⭐]
-    PPS_GRADE -->|65-84| GOOD[Grade: Good ⭐⭐]
-    PPS_GRADE -->|40-64| AVERAGE[Grade: Average ⭐]
-    PPS_GRADE -->|< 40| DEVELOPING[Grade: Developing]
-    ELITE & GOOD & AVERAGE & DEVELOPING --> SAVE_PPS[Save PPS to DB\nPublish: PlayerPPSUpdated]
-    SAVE_PPS --> GEN_INSIGHTS[AI Generates Insights\ne.g. "Weakness vs left-arm spin"]
-    GEN_INSIGHTS --> GEN_CARD[Generate Shareable\nStat Card Image]
-    GEN_CARD --> PLAYER_DONE([Player Profile Updated\nStat Card Ready])
-```
+    START([AI Agent Call Initiated]) --> CAPTURE[Capture before-state<br/>timestamp, prompt text]
+    CAPTURE --> EXECUTE[Execute AI Engine call]
+    EXECUTE --> MEASURE[Measure: response text, latency]
+    MEASURE --> COUNT[Count tokens<br/>Input: prompt tokens<br/>Output: response tokens]
+    COUNT --> CALC_COST[Calculate cost<br/>tokens × price per 1M tokens]
 
----
+    CALC_COST --> LOG_AUDIT[Append to Audit Log<br/>prompt + response + tokens + cost + latency]
+    CALC_COST --> UPDATE_COST[Update Cost Record<br/>Add tokens and cost to interview total]
 
-## AD-4: Store Offer Discovery & Redemption Flow
+    UPDATE_COST --> UPDATE_BREAKDOWN[Update Cost Breakdown<br/>Add to agent-specific totals]
+    UPDATE_BREAKDOWN --> CHECK_BUDGET{Total cost > budget alert?}
 
-```mermaid
-flowchart TD
-    START([Player/Fan Opens Stores Tab]) --> LOCATION{Location Permission\nGranted?}
-    LOCATION -->|No| ASK_PERMISSION[Request Location Permission]
-    ASK_PERMISSION --> LOCATION
-    LOCATION -->|Yes| GEO_SEARCH[Geo-Query Stores\nWithin 10 km Radius]
-    GEO_SEARCH --> RESULTS{Stores Found?}
-    RESULTS -->|No| EXPAND[Expand Radius to 20 km\nShow Nearest Stores Message]
-    RESULTS -->|Yes| DISPLAY_MAP[Display Map + List\nWith Store Pins]
-    DISPLAY_MAP --> USER_ACTION{User Action}
+    CHECK_BUDGET -->|Yes| ALERT[Log budget warning<br/>Flag interview for review]
+    CHECK_BUDGET -->|No| DONE([Cost tracked])
+    ALERT --> DONE
 
-    USER_ACTION -->|View Store| STORE_DETAIL[Show Store Profile\nPhotos, Hours, Products, Offers]
-    STORE_DETAIL --> OFFER_LIST[Show Active Offers\nDiscount Cards]
-    OFFER_LIST --> REDEEM_INTENT{User Wants\nto Redeem?}
-    REDEEM_INTENT -->|No| USER_ACTION
-    REDEEM_INTENT -->|Yes| GEN_QR[Generate Unique QR Code\nOffer Redemption Token]
-    GEN_QR --> AT_STORE{At the Store?}
-    AT_STORE -->|No| SAVE_QR[Save QR to "My Offers"\nFor Later Use]
-    AT_STORE -->|Yes| SCAN[Store Owner Scans QR\nvia Store Owner App]
-    SAVE_QR --> USER_ACTION
-    SCAN --> VALIDATE{QR Valid?\nNot Expired, Not Used}
-    VALIDATE -->|No| INVALID[Show: Offer Invalid\nor Already Redeemed]
-    VALIDATE -->|Yes| MARK_REDEEMED[Mark Offer Redeemed\nUpdate Redemption Count]
-    MARK_REDEEMED --> CONFIRM[Show Confirmation\nOffer Applied ✅]
-    CONFIRM --> REVIEW{Customer Wants\nto Leave Review?}
-    REVIEW -->|Yes| POST_REVIEW[Submit Star Rating + Review\nfor Store]
-    REVIEW -->|No| DONE([End])
-    POST_REVIEW --> DONE
-    INVALID --> USER_ACTION
-    EXPAND --> DISPLAY_MAP
+    style EXECUTE fill:#8b5cf6,color:#fff
+    style LOG_AUDIT fill:#10b981,color:#fff
+    style ALERT fill:#f59e0b,color:#fff
 ```

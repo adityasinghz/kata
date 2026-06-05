@@ -1,141 +1,208 @@
-# State Diagrams — CricZone: Local Cricket Community Platform
-
-> State machine diagrams for the five most important stateful entities in CricZone.
+# State Diagram — AI-Assisted Interview Screening
 
 ---
 
-## SD-1: Match Lifecycle
+## 1. Interview State Machine
 
 ```mermaid
 stateDiagram-v2
-    [*] --> SCHEDULED : Fixture created by Organizer
+    [*] --> DRAFT: Create Interview
 
-    SCHEDULED --> IN_PROGRESS : Scorer starts scoring session
-    SCHEDULED --> ABANDONED : Ground unavailable / weather
+    DRAFT --> READY: Manager confirms questions
+    DRAFT --> DRAFT: Edit questions / Update config
 
-    IN_PROGRESS --> INNINGS_BREAK : First innings completed
-    IN_PROGRESS --> ABANDONED : Match cancelled mid-game
+    READY --> IN_PROGRESS: Candidate starts interview
+    READY --> DRAFT: Manager re-edits questions
 
-    INNINGS_BREAK --> IN_PROGRESS : Second innings started by Scorer
+    IN_PROGRESS --> IN_PROGRESS: Candidate responds / AI adapts
+    IN_PROGRESS --> COMPLETED: Auto-conclude (≥8 Qs + full coverage OR ≥12 Qs)
+    IN_PROGRESS --> PAUSED: Candidate disconnects
+    
+    PAUSED --> IN_PROGRESS: Candidate resumes
+    PAUSED --> ABANDONED: Timeout (24 hours)
 
-    IN_PROGRESS --> COMPLETED : All overs bowled / team all-out / target chased
-    COMPLETED --> [*] : Stats locked, player career stats updated
+    COMPLETED --> REVIEWED: Reviewer submits decision
+    
+    ABANDONED --> [*]
+    REVIEWED --> [*]
 
-    ABANDONED --> [*] : No result recorded
+    state DRAFT {
+        [*] --> ConfigEntered
+        ConfigEntered --> QuestionsGenerated: AI generates
+        QuestionsGenerated --> QuestionsEdited: Manager edits
+        QuestionsEdited --> QuestionsGenerated: Regenerate
+    }
 
-    note right of IN_PROGRESS
-        Live scorecard pushed via WebSocket
-        Ball events written to ball_events table
-        Redis cache updated per ball
+    state IN_PROGRESS {
+        [*] --> QuestionPresented
+        QuestionPresented --> ResponseReceived: Candidate answers
+        ResponseReceived --> ResponseEvaluated: AI scores
+        ResponseEvaluated --> AdaptationDecided: AI decides next
+        AdaptationDecided --> QuestionPresented: Next question
+        AdaptationDecided --> InterviewConcluded: Conclude signal
+    }
+
+    state COMPLETED {
+        [*] --> ScoringCalculated
+        ScoringCalculated --> FeedbackGenerated: AI summarizes
+        FeedbackGenerated --> ReadyForReview
+    }
+
+    state REVIEWED {
+        [*] --> DecisionRecorded
+        DecisionRecorded --> [*]
+    }
+```
+
+---
+
+## 2. Question State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> GENERATED: AI creates question
+
+    GENERATED --> ACTIVE: Manager confirms (or auto-active)
+    GENERATED --> REMOVED: Manager removes
+
+    ACTIVE --> PRESENTED: Shown to candidate
+    ACTIVE --> SKIPPED: Coverage sufficient / interview concluded
+    ACTIVE --> EDITED: Manager modifies text
+    ACTIVE --> REMOVED: Manager removes
+
+    EDITED --> ACTIVE: Save edits
+
+    PRESENTED --> ANSWERED: Candidate responds
+    PRESENTED --> TIMED_OUT: No response (time limit)
+
+    ANSWERED --> SCORED: AI evaluates response
+    SCORED --> [*]
+
+    TIMED_OUT --> SCORED: Score as depth=1
+    TIMED_OUT --> [*]
+    SKIPPED --> [*]
+    REMOVED --> [*]
+```
+
+---
+
+## 3. Review Decision State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING_REVIEW: Interview completed
+
+    PENDING_REVIEW --> IN_REVIEW: Reviewer opens review page
+    
+    IN_REVIEW --> APPROVED: Reviewer accepts AI scores
+    IN_REVIEW --> ADJUSTED: Reviewer modifies scores
+    IN_REVIEW --> REJECTED: Reviewer overrides recommendation
+    IN_REVIEW --> PENDING_REVIEW: Reviewer exits without deciding
+
+    state APPROVED {
+        [*] --> AcceptedAsIs
+        AcceptedAsIs --> FinalDecisionRecorded
+        note right of AcceptedAsIs
+            AI recommendation becomes
+            final recommendation
+        end note
+    }
+
+    state ADJUSTED {
+        [*] --> ScoresModified
+        ScoresModified --> JustificationAdded: Required notes
+        JustificationAdded --> RecommendationRecalculated
+        RecommendationRecalculated --> FinalDecisionRecorded2
+        note right of ScoresModified
+            Reviewer modifies individual
+            dimension scores with reasoning
+        end note
+    }
+
+    state REJECTED {
+        [*] --> RecommendationOverridden
+        RecommendationOverridden --> RejectionReasonAdded: Required notes
+        RejectionReasonAdded --> FinalDecisionRecorded3
+        note right of RecommendationOverridden
+            Reviewer overrides AI decision
+            e.g., HIRE → NO_HIRE
+        end note
+    }
+
+    APPROVED --> [*]
+    ADJUSTED --> [*]
+    REJECTED --> [*]
+```
+
+---
+
+## 4. Adaptive Questioning State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> EVALUATE_RESPONSE: Candidate submits answer
+
+    EVALUATE_RESPONSE --> ASSESS_DEPTH: AI scores response
+
+    ASSESS_DEPTH --> FOLLOW_UP_EASIER: Depth ≤ 2
+    ASSESS_DEPTH --> CHECK_COVERAGE: Depth = 3
+    ASSESS_DEPTH --> FOLLOW_UP_DEEPER: Depth ≥ 4
+
+    CHECK_COVERAGE --> SWITCH_TOPIC: Gaps in coverage
+    CHECK_COVERAGE --> CHECK_QUESTION_COUNT: All topics ≥ 60%
+
+    CHECK_QUESTION_COUNT --> CONCLUDE: Questions ≥ 8
+    CHECK_QUESTION_COUNT --> SWITCH_TOPIC: Questions < 8
+
+    FOLLOW_UP_EASIER --> GENERATE_QUESTION: AI creates simpler question
+    FOLLOW_UP_DEEPER --> GENERATE_QUESTION: AI creates advanced question
+    SWITCH_TOPIC --> GENERATE_QUESTION: AI picks new topic
+
+    GENERATE_QUESTION --> MAX_QUESTIONS_CHECK: Question generated
+
+    MAX_QUESTIONS_CHECK --> PRESENT_QUESTION: Questions < 12
+    MAX_QUESTIONS_CHECK --> CONCLUDE: Questions ≥ 12
+
+    PRESENT_QUESTION --> [*]: Show to candidate
+
+    CONCLUDE --> SYNTHESIZE_FEEDBACK: Generate summary
+    SYNTHESIZE_FEEDBACK --> INTERVIEW_COMPLETE: Summary ready
+    INTERVIEW_COMPLETE --> [*]
+```
+
+---
+
+## 5. Cost Tracking State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> ZERO_COST: Interview created
+
+    ZERO_COST --> ACCUMULATING: First AI call made
+
+    ACCUMULATING --> ACCUMULATING: Additional AI calls
+    ACCUMULATING --> BUDGET_WARNING: Total cost > threshold
+
+    BUDGET_WARNING --> ACCUMULATING: Continue (below hard limit)
+    BUDGET_WARNING --> BUDGET_EXCEEDED: Hard limit reached
+
+    ACCUMULATING --> FINALIZED: Interview completed
+    BUDGET_WARNING --> FINALIZED: Interview completed
+    BUDGET_EXCEEDED --> FINALIZED: Interview force-concluded
+
+    FINALIZED --> [*]
+
+    note right of ACCUMULATING
+        Each AI call:
+        1. Count tokens
+        2. Calculate cost
+        3. Add to total
+        4. Update breakdown
     end note
 
-    note right of COMPLETED
-        Kafka: MatchCompleted event published
-        Player analytics service updates career stats
-        Community service auto-posts match summary
+    note right of BUDGET_WARNING
+        Soft limit: $0.01 per interview
+        Hard limit: $0.05 per interview
+        (configurable)
     end note
-```
-
----
-
-## SD-2: Tournament Lifecycle
-
-```mermaid
-stateDiagram-v2
-    [*] --> DRAFT : Organizer creates tournament
-
-    DRAFT --> REGISTRATION_OPEN : Organizer opens registration
-    DRAFT --> CANCELLED : Organizer cancels before opening
-
-    REGISTRATION_OPEN --> REGISTRATION_CLOSED : Deadline reached OR max teams registered
-    REGISTRATION_OPEN --> CANCELLED : Organizer cancels
-
-    REGISTRATION_CLOSED --> FIXTURES_PUBLISHED : Auto/manual scheduling done
-    REGISTRATION_CLOSED --> CANCELLED : Insufficient teams registered
-
-    FIXTURES_PUBLISHED --> IN_PROGRESS : First match starts
-    FIXTURES_PUBLISHED --> CANCELLED : Organizer cancels
-
-    IN_PROGRESS --> IN_PROGRESS : Matches played, points table updated
-    IN_PROGRESS --> COMPLETED : Final match result entered
-
-    COMPLETED --> [*] : Tournament report generated, media API updated
-    CANCELLED --> [*]
-```
-
----
-
-## SD-3: Ground Booking Lifecycle
-
-```mermaid
-stateDiagram-v2
-    [*] --> SLOT_AVAILABLE : Ground listed with open slots
-
-    SLOT_AVAILABLE --> PAYMENT_PENDING : User selects slot and confirms booking
-    PAYMENT_PENDING --> CONFIRMED : Payment successful (Razorpay/UPI)
-    PAYMENT_PENDING --> SLOT_AVAILABLE : Payment failed or timeout (30 min hold released)
-
-    CONFIRMED --> CHECKED_IN : Day of booking, QR code scanned by ground owner
-    CONFIRMED --> CANCELLED : User cancels (> 24 hrs before) → refunded
-    CONFIRMED --> NO_SHOW : Match day passes with no check-in
-
-    CHECKED_IN --> COMPLETED : Match session used, slot released
-    COMPLETED --> [*]
-    CANCELLED --> SLOT_AVAILABLE : Slot made available again
-    NO_SHOW --> [*] : No refund
-```
-
----
-
-## SD-4: Offer Lifecycle
-
-```mermaid
-stateDiagram-v2
-    [*] --> DRAFT : Store Owner creates offer
-
-    DRAFT --> ACTIVE : Store Owner publishes
-    DRAFT --> CANCELLED : Store Owner discards
-
-    ACTIVE --> ACTIVE : Redemptions ongoing (current < max)
-    ACTIVE --> EXPIRED : Valid until date reached
-    ACTIVE --> EXHAUSTED : Max redemptions reached
-    ACTIVE --> PAUSED : Store Owner pauses temporarily
-    ACTIVE --> CANCELLED : Store Owner cancels
-
-    PAUSED --> ACTIVE : Store Owner resumes
-
-    EXPIRED --> [*]
-    EXHAUSTED --> [*]
-    CANCELLED --> [*]
-
-    note right of ACTIVE
-        Kafka: OfferPublished triggers push
-        notifications to store followers
-    end note
-```
-
----
-
-## SD-5: Sponsorship Deal Lifecycle
-
-```mermaid
-stateDiagram-v2
-    [*] --> REQUIREMENT_POSTED : Organizer posts sponsorship requirement
-
-    REQUIREMENT_POSTED --> MATCHING : AI Engine runs sponsor matching
-    MATCHING --> PROPOSALS_SENT : Matched sponsors notified
-    MATCHING --> NO_MATCH : No matching sponsors found → posted to marketplace
-
-    PROPOSALS_SENT --> NEGOTIATING : Sponsor expresses interest
-    NEGOTIATING --> ACTIVE : Both parties accept; digital contract signed
-    NEGOTIATING --> CANCELLED : Either party declines
-
-    ACTIVE --> BRANDING_LIVE : Sponsor logos deployed on live scorecards
-    BRANDING_LIVE --> BRANDING_LIVE : Tournament matches ongoing
-    BRANDING_LIVE --> COMPLETED : Tournament completes
-    BRANDING_LIVE --> CANCELLED : Tournament cancelled
-
-    COMPLETED --> [*] : Sponsor ROI report generated
-    CANCELLED --> [*]
-    NO_MATCH --> [*] : Marketplace listing published
 ```

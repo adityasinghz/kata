@@ -1,423 +1,349 @@
-# Class Diagram — CricZone: Local Cricket Community Platform
-
-> Class diagrams are organized by **bounded context** (DDD). Relationships (association, composition, dependency) are shown across contexts where coupling exists.
+# Class Diagram — AI-Assisted Interview Screening
 
 ---
 
-## 1. Identity & Access Management
+## 1. Core Domain — Interview Management
 
 ```mermaid
 classDiagram
-    class User {
-        +String userId
-        +String mobileNumber
-        +String name
-        +String email
-        +String profilePhotoUrl
-        +String city
-        +UserRole role
-        +UserStatus status
+    class Interview {
+        +String id
+        +String role
+        +String level
+        +String[] skills
+        +String jdText
+        +String resumeText
+        +String candidateName
+        +String status
         +DateTime createdAt
-        +register()
-        +verifyOTP()
-        +updateProfile()
-        +deactivate()
+        +DateTime completedAt
+        +create(config) Interview
+        +start() void
+        +complete() void
+        +getProgress() Progress
     }
 
-    class UserRole {
-        <<enumeration>>
-        PLAYER
-        ORGANIZER
-        FAN
-        SCORER
-        STORE_OWNER
-        SPONSOR
-        ADMIN
+    class Question {
+        +String id
+        +String interviewId
+        +String category
+        +String text
+        +int sequence
+        +String source
+        +String depthTarget
     }
 
-    class UserStatus {
-        <<enumeration>>
-        PENDING_VERIFICATION
-        ACTIVE
-        SUSPENDED
-        DEACTIVATED
+    class Response {
+        +String id
+        +String questionId
+        +String interviewId
+        +String candidateText
+        +int depthScore
+        +int responseTimeSec
+        +DateTime createdAt
     }
 
-    class KYCVerification {
-        +String kycId
-        +String userId
-        +String documentType
-        +String documentNumber
-        +KYCStatus status
-        +DateTime verifiedAt
-        +verify()
-        +reject()
+    class DimensionScore {
+        +String responseId
+        +String dimension
+        +float score
+        +String rationale
     }
 
-    class KYCStatus {
-        <<enumeration>>
-        PENDING
-        APPROVED
-        REJECTED
-    }
+    Interview "1" --o "*" Question : contains
+    Interview "1" --o "*" Response : captures
+    Question "1" --o "0..1" Response : answered_by
+    Response "1" --o "4" DimensionScore : scored_on
 
-    class Session {
-        +String sessionId
-        +String userId
-        +String jwtToken
-        +String refreshToken
-        +DateTime expiresAt
-        +invalidate()
-        +refresh()
-    }
-
-    User "1" --> "1" UserRole : has
-    User "1" --> "1" UserStatus : has
-    User "1" --> "0..1" KYCVerification : undergoes
-    KYCVerification "1" --> "1" KYCStatus : has
-    User "1" --> "*" Session : opens
-```
-
----
-
-## 2. Tournament & Competition Management
-
-```mermaid
-classDiagram
-    class Tournament {
-        +String tournamentId
-        +String name
-        +TournamentFormat format
-        +TournamentStatus status
-        +String organizerId
-        +Date startDate
-        +Date endDate
-        +Int maxTeams
-        +String city
-        +create()
-        +openRegistration()
-        +autoScheduleFixtures()
-        +close()
-        +clone() Tournament
-    }
-
-    class TournamentFormat {
-        <<enumeration>>
-        T20
-        ODI
-        BOX_CRICKET
-        ONE_DAY_LEAGUE
-    }
-
-    class TournamentStatus {
+    class InterviewStatus {
         <<enumeration>>
         DRAFT
-        REGISTRATION_OPEN
+        READY
         IN_PROGRESS
         COMPLETED
-        CANCELLED
+        REVIEWED
     }
 
-    class Team {
-        +String teamId
-        +String teamName
-        +String captainId
-        +String tournamentId
-        +List~String~ playerIds
-        +Int squadSize
-        +register()
-        +selectPlayingXI() List~String~
-    }
-
-    class TeamRegistration {
-        +String registrationId
-        +String teamId
-        +String tournamentId
-        +RegistrationStatus status
-        +DateTime registeredAt
-        +approve()
-        +reject()
-    }
-
-    class Fixture {
-        +String fixtureId
-        +String tournamentId
-        +String team1Id
-        +String team2Id
-        +String groundId
-        +String umpireId
-        +DateTime scheduledAt
-        +MatchRound round
-        +schedule()
-        +reschedule()
-    }
-
-    class PointsTableEntry {
-        +String teamId
-        +String tournamentId
-        +Int matchesPlayed
-        +Int wins
-        +Int losses
-        +Int noResults
-        +Int points
-        +Float netRunRate
-        +update()
-    }
-
-    Tournament "1" --> "*" Team : has
-    Tournament "1" --> "*" Fixture : contains
-    Tournament "1" --> "*" PointsTableEntry : tracks
-    Team "1" --> "1" TeamRegistration : created via
-    TeamRegistration "1" --> "1" RegistrationStatus
-    Fixture "1" --> "1" MatchRound
-```
-
----
-
-## 3. Live Match & Scoring
-
-```mermaid
-classDiagram
-    class Match {
-        +String matchId
-        +String fixtureId
-        +MatchStatus status
-        +String scorerId
-        +String winnerTeamId
-        +String resultSummary
-        +start()
-        +endInnings()
-        +declareResult()
-        +undo()
-    }
-
-    class MatchStatus {
+    class QuestionCategory {
         <<enumeration>>
-        SCHEDULED
-        IN_PROGRESS
-        INNINGS_BREAK
-        COMPLETED
-        ABANDONED
+        TECHNICAL
+        BEHAVIORAL
+        PROBLEM_SOLVING
+        SYSTEM_DESIGN
     }
 
-    class Innings {
-        +String inningsId
-        +String matchId
-        +String battingTeamId
-        +String bowlingTeamId
-        +Int inningsNumber
-        +Int totalRuns
-        +Int totalWickets
-        +Int totalExtras
-        +Int oversCompleted
-        +Int target
-        +addBallEvent()
-        +calculatePartnership()
-    }
-
-    class BallEvent {
-        +String ballEventId
-        +String matchId
-        +String inningsId
-        +Int overNumber
-        +Int ballNumber
-        +Int runsScored
-        +WicketType wicketType
-        +String dismissedBatsmanId
-        +ExtraType extraType
-        +Int extraRuns
-        +String batsmanId
-        +String bowlerId
-        +DateTime recordedAt
-    }
-
-    class BattingCard {
-        +String batsmanId
-        +String matchId
-        +Int runsScored
-        +Int ballsFaced
-        +Int fours
-        +Int sixes
-        +Boolean isOut
-        +WicketType wicketType
-        +String bowlerId
-        +calculateStrikeRate() Float
-    }
-
-    class BowlingCard {
-        +String bowlerId
-        +String matchId
-        +Int oversBowled
-        +Int runsConceded
-        +Int wicketsTaken
-        +Int maidenOvers
-        +Int wides
-        +Int noBalls
-        +calculateEconomy() Float
-    }
-
-    class WicketType {
+    class QuestionSource {
         <<enumeration>>
-        BOWLED
-        CAUGHT
-        LBW
-        RUN_OUT
-        STUMPED
-        HIT_WICKET
-        RETIRED
+        JD_ALIGNED
+        RESUME_PROBE
+        GAP_EXPLORATION
+        GENERAL
+        ADAPTIVE_FOLLOWUP
+        MANUAL
     }
 
-    Match "1" --> "2" Innings : has
-    Innings "1" --> "*" BallEvent : records
-    Innings "1" --> "*" BattingCard : generates
-    Innings "1" --> "*" BowlingCard : generates
-    BallEvent "1" --> "0..1" WicketType : may have
+    Interview --> InterviewStatus
+    Question --> QuestionCategory
+    Question --> QuestionSource
 ```
 
 ---
 
-## 4. Player Analytics & AI
+## 2. Scoring & Review Domain
 
 ```mermaid
 classDiagram
-    class PlayerProfile {
-        +String playerId
-        +String userId
-        +String primaryRole
-        +String battingStyle
-        +String bowlingStyle
-        +Int matchesPlayed
-        +DateTime debutDate
+    class ScoreSummary {
+        +String interviewId
+        +float technicalDepth
+        +float communication
+        +float problemSolving
+        +float roleAlignment
+        +float overallConfidence
+        +String aiRecommendation
+        +String feedbackSummary
+        +calculate(dimensionScores) void
+        +mapRecommendation() String
     }
 
-    class CareerStats {
-        +String playerId
-        +Int totalRuns
-        +Int totalWickets
-        +Int totalCatches
-        +Float battingAverage
-        +Float battingStrikeRate
-        +Float bowlingAverage
-        +Float bowlingEconomy
-        +Int centuries
-        +Int halfCenturies
-        +Int bestBowlingWickets
-        +Int bestBowlingRuns
-        +update()
+    class ReviewDecision {
+        +String interviewId
+        +String reviewerName
+        +String action
+        +String finalDecision
+        +String notes
+        +Object adjustments
+        +DateTime decidedAt
+        +submit() void
     }
 
-    class MatchPerformance {
-        +String performanceId
-        +String playerId
-        +String matchId
-        +Int runsScored
-        +Int ballsFaced
-        +Int wicketsTaken
-        +Float economy
-        +Int catches
-        +DateTime matchDate
+    class Recommendation {
+        <<enumeration>>
+        STRONG_HIRE
+        HIRE
+        MAYBE
+        NO_HIRE
     }
 
-    class PlayerPerformanceScore {
-        +String ppsId
-        +String playerId
-        +Float score
-        +String grade
-        +DateTime calculatedAt
-        +Map~String, Float~ componentScores
-        +calculate()
-        +getGrade() String
+    class ReviewAction {
+        <<enumeration>>
+        APPROVE
+        ADJUST
+        REJECT
     }
 
-    class AIInsight {
-        +String insightId
-        +String playerId
-        +String insightText
-        +String insightCategory
-        +Float confidenceScore
-        +DateTime generatedAt
-        +generate()
+    class FinalDecision {
+        <<enumeration>>
+        ADVANCE
+        HOLD
+        REJECT
     }
 
-    PlayerProfile "1" --> "1" CareerStats : has
-    PlayerProfile "1" --> "*" MatchPerformance : has
-    PlayerProfile "1" --> "1" PlayerPerformanceScore : has
-    PlayerProfile "1" --> "*" AIInsight : receives
+    ScoreSummary --> Recommendation
+    ReviewDecision --> ReviewAction
+    ReviewDecision --> FinalDecision
 ```
 
 ---
 
-## 5. Commerce & Social
+## 3. AI Agent Domain
 
 ```mermaid
 classDiagram
-    class Store {
-        +String storeId
-        +String ownerId
+    class AIAgent {
+        <<interface>>
         +String name
-        +String address
-        +Float latitude
-        +Float longitude
-        +String phone
-        +Float rating
-        +StoreStatus status
-        +List~String~ productCategories
-        +updateProfile()
-        +publishOffer()
+        +String promptTemplate
+        +execute(input) AgentOutput
     }
 
-    class Offer {
-        +String offerId
-        +String storeId
-        +String title
-        +String description
-        +Float discountPercentage
-        +Date validUntil
-        +Int maxRedemptions
-        +Int currentRedemptions
-        +OfferStatus status
-        +generateQRCode() String
-        +redeem()
+    class QuestionGeneratorAgent {
+        +execute(config) Question[]
     }
 
-    class Post {
-        +String postId
-        +String authorId
-        +PostType type
-        +String content
-        +String mediaUrl
-        +Int likesCount
-        +Int commentsCount
-        +Boolean isAutoGenerated
+    class AdaptiveFollowupAgent {
+        +execute(context) AdaptiveResult
+    }
+
+    class ResponseEvaluatorAgent {
+        +execute(qa) EvaluationResult
+    }
+
+    class FeedbackSynthesizerAgent {
+        +execute(allData) FeedbackSummary
+    }
+
+    class IntegrityMonitorAgent {
+        +execute(responses) IntegrityReport
+    }
+
+    AIAgent <|.. QuestionGeneratorAgent
+    AIAgent <|.. AdaptiveFollowupAgent
+    AIAgent <|.. ResponseEvaluatorAgent
+    AIAgent <|.. FeedbackSynthesizerAgent
+    AIAgent <|.. IntegrityMonitorAgent
+
+    class AIOrchestrator {
+        -Map~String, AIAgent~ agents
+        -AIEngine engine
+        -PromptBuilder promptBuilder
+        +registerAgent(name, agent)
+        +invokeAgent(name, input) AgentOutput
+        -buildPrompt(template, context) String
+        -trackAndLog(result) void
+    }
+
+    class AIEngine {
+        <<interface>>
+        +call(prompt) LLMResponse
+    }
+
+    class MockAIEngine {
+        +call(prompt) LLMResponse
+        -simulateLatency() void
+        -generateMockResponse(prompt) String
+    }
+
+    class GeminiAIEngine {
+        -apiKey String
+        -model String
+        +call(prompt) LLMResponse
+    }
+
+    AIEngine <|.. MockAIEngine
+    AIEngine <|.. GeminiAIEngine
+    AIOrchestrator --> AIEngine
+    AIOrchestrator o-- AIAgent
+
+    class AgentOutput {
+        +Object data
+        +int inputTokens
+        +int outputTokens
+        +int latencyMs
+    }
+
+    class PromptBuilder {
+        -String template
+        +setRole(role) PromptBuilder
+        +setSkills(skills) PromptBuilder
+        +setContext(context) PromptBuilder
+        +setHistory(history) PromptBuilder
+        +build() String
+    }
+
+    AIOrchestrator --> PromptBuilder
+```
+
+---
+
+## 4. Audit & Cost Domain
+
+```mermaid
+classDiagram
+    class AuditLog {
+        +String id
+        +String interviewId
+        +String agentName
+        +String promptText
+        +String responseText
+        +int inputTokens
+        +int outputTokens
+        +float costUsd
+        +int latencyMs
         +DateTime createdAt
-        +publish()
-        +delete()
     }
 
-    class Poll {
-        +String pollId
-        +String postId
-        +String question
-        +List~PollOption~ options
-        +DateTime expiresAt
-        +vote()
-        +getResults() Map
+    class CostRecord {
+        +String interviewId
+        +int totalInputTokens
+        +int totalOutputTokens
+        +float totalCostUsd
+        +String modelUsed
+        +Object costBreakdown
+        +addCall(agent, tokens, cost) void
+        +getTotalCost() float
     }
 
-    class Sponsorship {
-        +String dealId
-        +String sponsorId
-        +String tournamentId
-        +SponsorshipTier tier
-        +SponsorshipStatus status
-        +String contractUrl
-        +DateTime activatedAt
-        +activate()
-        +generateContract()
-        +getROIDashboard() ROIMetrics
+    class CostBreakdownEntry {
+        +String agentName
+        +int inputTokens
+        +int outputTokens
+        +float costUsd
+        +int callCount
     }
 
-    Store "1" --> "*" Offer : publishes
-    Post "1" --> "0..1" Poll : may have
-    Sponsorship "1" --> "1" SponsorshipTier
+    CostRecord "1" --o "*" CostBreakdownEntry : breaks_into
+
+    class AuditLogger {
+        +log(entry) void
+        +getByInterview(id) AuditLog[]
+        +getByAgent(name) AuditLog[]
+        +getAll(filters) AuditLog[]
+    }
+
+    class CostTracker {
+        -PricingConfig pricing
+        +trackTokens(interviewId, agent, tokens) void
+        +getCostForInterview(id) CostRecord
+        +getAggregateCosts() AggregateCost
+        +calculateCost(tokens) float
+    }
+
+    AuditLogger --> AuditLog
+    CostTracker --> CostRecord
+```
+
+---
+
+## 5. Data Store Domain
+
+```mermaid
+classDiagram
+    class DataStore {
+        <<interface>>
+        +saveInterview(data) void
+        +getInterview(id) Interview
+        +getAllInterviews() Interview[]
+        +updateInterview(id, data) void
+        +saveResponse(data) void
+        +saveScores(data) void
+        +saveReview(data) void
+    }
+
+    class InMemoryStore {
+        -Map interviews
+        -Map responses
+        -Map scores
+        -Map reviews
+        -Map auditLogs
+        -Map costs
+    }
+
+    DataStore <|.. InMemoryStore
+
+    class InterviewRepository {
+        -DataStore store
+        +create(config) Interview
+        +findById(id) Interview
+        +findAll() Interview[]
+        +updateStatus(id, status) void
+    }
+
+    class AuditRepository {
+        -DataStore store
+        +append(entry) void
+        +findByInterview(id) AuditLog[]
+        +findAll(filters) AuditLog[]
+    }
+
+    class CostRepository {
+        -DataStore store
+        +upsert(interviewId, costData) void
+        +findByInterview(id) CostRecord
+        +getAggregates() AggregateCost
+    }
+
+    InterviewRepository --> DataStore
+    AuditRepository --> DataStore
+    CostRepository --> DataStore
 ```
